@@ -1,5 +1,8 @@
 import java.io.*;
 import java.net.*;
+import com.mongodb.client.MongoDatabase; 
+import com.mongodb.MongoClient; 
+import com.mongodb.MongoCredential; 
 
 public class RSSReader{
 
@@ -9,6 +12,7 @@ public class RSSReader{
         System.out.println(readRSS("http://rss.cnn.com/rss/cnn_topstories.rss") + "");
         System.out.println("\n-----------------------------\n");
     }
+
 
     public static String readRSS(String urlAddress){
         try{
@@ -27,7 +31,6 @@ public class RSSReader{
                     temp = temp.substring(0,lastPos);
                     sourceCode +=temp+"\n";
                 }
-
             }
             in.close();
             return sourceCode;
