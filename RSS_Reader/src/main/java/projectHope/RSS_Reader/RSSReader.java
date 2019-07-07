@@ -11,6 +11,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
 import com.rometools.fetcher.FeedFetcher;
 import com.rometools.fetcher.FetcherException;
 import com.rometools.fetcher.impl.HttpURLFeedFetcher;
@@ -19,12 +20,16 @@ import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.FeedException;
 
 
+
+
+
 @SuppressWarnings("deprecation")
 public class RSSReader {
 	
 	private  MongoClient mongoClient;
 	
 	public RSSReader() {
+		
 		mongoClient = new MongoClient("localhost",27017);
 	}
 	
