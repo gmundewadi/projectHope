@@ -10,8 +10,7 @@ public class ProjectHope1Application {
 	
 
 	public static void main(String[] args) {
-		MongoRSSFeed mrf = new MongoRSSFeed();
-		mrf.updateDB();
+		
 		SpringApplication.run(ProjectHope1Application.class, args);
 	}
 	

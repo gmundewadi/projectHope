@@ -1,77 +1,94 @@
 package projectHope.RSS_Reader;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
-import com.google.gson.Gson;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.rometools.fetcher.FeedFetcher;
+import com.rometools.fetcher.FetcherException;
+import com.rometools.fetcher.impl.HttpURLFeedFetcher;
+import com.rometools.rome.feed.synd.SyndEntry;
+import com.rometools.rome.feed.synd.SyndFeed;
+import com.rometools.rome.io.FeedException;
 
 
+@SuppressWarnings("deprecation")
 public class RSSReader {
 	
-	private MongoClient mongoClient;
-	private static ArrayList<Article> articles;
+	private  MongoClient mongoClient;
 	
 	public RSSReader() {
 		mongoClient = new MongoClient("localhost",27017);
-		articles = new ArrayList<Article>();
 	}
 	
 	public static void main(String[] args) {
 		RSSReader r = new RSSReader();
-		r.updateDB();
-		for(Article a: articles) {
-			System.out.println(a.toString());
-		}
+		r.removeAllArticles();
+		//r.updateDB();
+		System.out.println(r.countArticles());
 	}
 	
 	public void updateDB() {
+        try { 
+    		DB database = mongoClient.getDB("RSS_Reader");
+    		DBCollection collection = database.getCollection(("Article"));
+        	FeedFetcher fetcher = new HttpURLFeedFetcher();
+			SyndFeed feed = fetcher.retrieveFeed(new URL("http://rss.cnn.com/rss/cnn_topstories.rss"));
+			for(Object o: feed.getEntries()) {
+				SyndEntry entry = (SyndEntry) o;
+				String title = entry.getTitle();
+				String link = entry.getLink();
+				String description = entry.getDescription().getValue();
+				
+
+				
+				BasicDBObject document = new BasicDBObject();
+				document.append("_id", title);
+				if(collection.findOne(document) != null)
+					continue;
+				document.append("title", title);
+				document.append("link", link);
+				document.append("description", description);
+		        collection.insert((document));
+			}
+			
+        } catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (FeedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (FetcherException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}	
+	}
+	
+	public int countArticles() {
 		DB database = mongoClient.getDB("RSS_Reader");
 		DBCollection collection = database.getCollection(("Article"));
-		BasicDBObject document = new BasicDBObject();
-		readRSS("http://rss.cnn.com/rss/cnn_topstories.rss");
-		collection.insert(document);
+		return (int) collection.getCount();
 	}
 	
-		
-	public String serializeArticle(Article article) {
-		Gson gson = new Gson();
-		String json = gson.toJson(article);
-		return json;
+	public void removeAllArticles() {
+		DB database = mongoClient.getDB("RSS_Reader");
+		DBCollection collection = database.getCollection(("Article"));
+		collection.dropIndexes();
 	}
-	
-	public Article deserializeArticle(String json) {
-		Gson gson = new Gson();
-		Article result = gson.fromJson((json), Article.class);
-		articles.add(result);
-		return result;
-	}
-	
-	
-	 public void readRSS(String urlAddress){
-	        try{
-	            URL rssUrl = new URL(urlAddress);
-	            BufferedReader in = new BufferedReader(new InputStreamReader(rssUrl.openStream()));
-	            String line;
-	            while((line = in.readLine()) != null)
-	            	deserializeArticle(line);
-	            in.close();
-	        } catch (MalformedURLException ue){
-	            System.out.println("URL provided is not found");
-	        } catch (IOException ioe){
-	            System.out.println("An error was encountered when reading rss contents");
-	        }
-
-	    }
-	
-	
 }

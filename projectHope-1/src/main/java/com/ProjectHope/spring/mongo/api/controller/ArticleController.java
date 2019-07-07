@@ -32,9 +32,9 @@ public class ArticleController {
 		return articles;
 	}
 	
-	@GetMapping("/articles/{title}")
-	public Article getArticle(@PathVariable String title) {
-		Article a = repository.findById(title).get();
+	@GetMapping("/articles/{link}")
+	public Article getArticle(@PathVariable String link) {
+		Article a = repository.findById(link).get();
 		return a;
 	}
 	
