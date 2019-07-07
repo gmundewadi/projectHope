@@ -26,7 +26,6 @@ public class ArticleController {
 	
 	@GetMapping("/articles")
 	public List<Article> getAllArticles(){
-		System.out.println("HERE");
 		List<Article> articles = new ArrayList<>();
 		repository.findAll().forEach(articles::add); 
 		return articles;
@@ -38,9 +37,14 @@ public class ArticleController {
 		return a;
 	}
 	
-	@DeleteMapping("/articles/{title}")
-	public void deleteArticle(@PathVariable String title) {
-		repository.deleteById(title);
+	
+	// Methods written below for testing REST API 
+	// endpoints. Not needed in final projectHope
+	// application
+	
+	@DeleteMapping("/articles/{link}")
+	public void deleteArticle(@PathVariable String link) {
+		repository.deleteById(link);
 	}
 	
 	@PostMapping(value = "/articles")
@@ -48,8 +52,8 @@ public class ArticleController {
 		repository.save((a));
 	}
 	
-	@PutMapping("/articles/{title}")
-	public void updateArticle(@RequestBody Article a, @PathVariable String title) {
+	@PutMapping("/articles/{link}")
+	public void updateArticle(@RequestBody Article a, @PathVariable String link) {
 		repository.save((a));
 	}
 }

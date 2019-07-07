@@ -4,11 +4,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.io.File; 
+import java.util.Scanner; 
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
@@ -42,38 +39,43 @@ public class RSSReader {
     		DB database = mongoClient.getDB("RSS_Reader");
     		DBCollection collection = database.getCollection(("Article"));
         	FeedFetcher fetcher = new HttpURLFeedFetcher();
-			SyndFeed feed = fetcher.retrieveFeed(new URL("http://rss.cnn.com/rss/cnn_topstories.rss"));
-			for(Object o: feed.getEntries()) {
-				SyndEntry entry = (SyndEntry) o;
-				String title = entry.getTitle();
-				String link = entry.getLink();
-				String description = entry.getDescription().getValue();
-				
-				
-				BasicDBObject document = new BasicDBObject();
-				document.append("_id", link);
-				if(collection.findOne(document) != null)
-					continue;
-				document.append("title", title);
-				document.append("link", link);
-				document.append("description", description);
-		        collection.insert((document));
-			}
-			
+        	SyndFeed feed;
+        	File file = new File("rssFeeds");
+        	Scanner sc = new Scanner(file);
+        	while(sc.hasNextLine()) {
+        		String url = sc.nextLine();
+    			feed = fetcher.retrieveFeed(new URL(url));
+    			for(Object o: feed.getEntries()) {
+    				SyndEntry entry = (SyndEntry) o;
+    				String title = entry.getTitle();
+    				String link = entry.getLink();
+    				String description = entry.getDescription().getValue();
+    				
+    				
+    				BasicDBObject document = new BasicDBObject();
+    				document.append("link", link);
+    				if(collection.findOne(document) != null)
+    					continue;
+    				document.append("title", title);
+    				document.append("description", description);
+    		        collection.insert((document));
+    			}
+        	}
+        	sc.close();	
         } catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
+			System.out.println("Illegal Arguement Exception");
 			e.printStackTrace();
 		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
+			System.out.println("MalformedURL Exception");
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			System.out.println("IO Exception");
 			e.printStackTrace();
 		} catch (FeedException e) {
-			// TODO Auto-generated catch block
+			System.out.println("Feed Exception");
 			e.printStackTrace();
 		} catch (FetcherException e) {
-			// TODO Auto-generated catch block
+			System.out.println("Fetchter Exception");
 			e.printStackTrace();
 		}	
 	}

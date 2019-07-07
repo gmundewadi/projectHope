@@ -12,22 +12,20 @@ public class Article {
 	
 	// save all that information to an external database
 	
-	private String title;
-	private String author;
-	private String description;
-	@Id
 	private String link;
-	
+	private String title;
+	private String description;
+		
 
-	public Article(String title, String author, String description, String link) {
+	public Article(String title, String description, String link) {
+		
 		this.title = title;
-		this.author = author;
 		this.description = description;
 		this.link = link;
 	}
 
 	public String toString() {
-		return "Article [title = " + title + ", author = " + author + ", description = "
+		return "Article [title = " + title + "description = "
 				+ description + ", link=" + link + "]";
 	}
 	
@@ -36,12 +34,6 @@ public class Article {
 	}
 	public void setTitle(String title) {
 		this.title = title;
-	}
-	public String getAuthor() {
-		return author;
-	}
-	public void setAuthor(String author) {
-		this.author = author;
 	}
 	public String getDescription() {
 		return description;
