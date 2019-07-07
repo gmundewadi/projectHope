@@ -33,7 +33,7 @@ public class RSSReader {
 	
 	public static void main(String[] args) {
 		RSSReader r = new RSSReader();
-		//r.updateDB();
+		r.updateDB();
 		System.out.println(r.countArticles());
 	}
 	
