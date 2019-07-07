@@ -33,7 +33,6 @@ public class RSSReader {
 	
 	public static void main(String[] args) {
 		RSSReader r = new RSSReader();
-		r.removeAllArticles();
 		//r.updateDB();
 		System.out.println(r.countArticles());
 	}
@@ -50,10 +49,9 @@ public class RSSReader {
 				String link = entry.getLink();
 				String description = entry.getDescription().getValue();
 				
-
 				
 				BasicDBObject document = new BasicDBObject();
-				document.append("_id", title);
+				document.append("_id", link);
 				if(collection.findOne(document) != null)
 					continue;
 				document.append("title", title);
@@ -84,11 +82,5 @@ public class RSSReader {
 		DB database = mongoClient.getDB("RSS_Reader");
 		DBCollection collection = database.getCollection(("Article"));
 		return (int) collection.getCount();
-	}
-	
-	public void removeAllArticles() {
-		DB database = mongoClient.getDB("RSS_Reader");
-		DBCollection collection = database.getCollection(("Article"));
-		collection.dropIndexes();
 	}
 }
