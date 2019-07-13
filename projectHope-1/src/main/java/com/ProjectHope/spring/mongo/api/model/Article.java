@@ -5,12 +5,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "Article")
 public class Article {
-
-	// to work on here --> resolve issue with id not being saved correclty
-	
-	// next: load a bunch of RSS feeds from a file and save into local database
-	
-	// save all that information to an external database
 	
 	private String link;
 	private String title;
