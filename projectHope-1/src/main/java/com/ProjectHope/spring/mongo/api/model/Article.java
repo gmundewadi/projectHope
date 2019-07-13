@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document(collection = "Article")
 public class Article {
 	
+	@Id
 	private String link;
 	private String title;
 	private String description;
