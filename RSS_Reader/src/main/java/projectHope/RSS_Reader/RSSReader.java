@@ -43,7 +43,7 @@ public class RSSReader {
 	
 	public static void main(String[] args) {
 		RSSReader r = new RSSReader();
-		//r.updateDB();
+		r.updateDB();
 		System.out.println(r.countArticles());
 	}
 	
@@ -67,9 +67,10 @@ public class RSSReader {
     				
     				Document document = new Document();
     				document.append("link", link);
-    				long count = collection.count(new BsonDocument("link", new BsonString(link)));    					
-    				if(count > 1)
+    				long count = collection.countDocuments(new BsonDocument("link", new BsonString(link)));    					
+    				if(count > 1) {
     					continue;
+    				}
     					
     				document.append("title", title);
     				document.append("description", description);
@@ -98,6 +99,6 @@ public class RSSReader {
 	public int countArticles() {
 		MongoDatabase database = mongoClient.getDatabase("RSS_Reader");
 		MongoCollection<Document> collection = database.getCollection("Article");
-		return (int) collection.count();
+		return (int) collection.countDocuments();
 	}
 }
