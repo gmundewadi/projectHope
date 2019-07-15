@@ -6,6 +6,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.io.File;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Scanner;
 
 import org.bson.BsonDocument;
@@ -33,12 +34,8 @@ public class RSSReader {
 	
 	public RSSReader() {
 		
-		
-		MongoClientURI uri = new MongoClientURI(
-			    "mongodb+srv://dbUser:projectHope@cluster0-biq2l.mongodb.net/test?retryWrites=true&w=majority");
+		MongoClientURI uri = new MongoClientURI("mongodb+srv://dbUser:projectHope@cluster0-biq2l.mongodb.net/test?retryWrites=true&w=majority");
 		mongoClient = new MongoClient(uri);
-		
-
 	}
 	
 	public static void main(String[] args) {
@@ -63,17 +60,19 @@ public class RSSReader {
     				String title = entry.getTitle();
     				String link = entry.getLink();
     				String description = entry.getDescription().getValue();
-    				
-    				
+    				Date pubDate = entry.getPublishedDate();
+    				String uri = entry.getUri();
     				Document document = new Document();
     				document.append("link", link);
     				long count = collection.countDocuments(new BsonDocument("link", new BsonString(link)));    					
     				if(count > 1) {
     					continue;
     				}
-    					
     				document.append("title", title);
     				document.append("description", description);
+    			
+    				document.append("pubDate", pubDate);
+    				document.append("uri", uri);
     		        collection.insertOne((document));
     			}
         	}
