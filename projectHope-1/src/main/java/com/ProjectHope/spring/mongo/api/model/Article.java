@@ -1,5 +1,7 @@
 package com.ProjectHope.spring.mongo.api.model;
 
+import java.util.Date;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -10,20 +12,34 @@ public class Article {
 	private String link;
 	private String title;
 	private String description;
-		
-
-	public Article(String title, String description, String link) {
-		
+	private String author;
+	private String uri;
+	private Date pubDate;
+	
+	public Article(String link, String title, String description, String author, String uri, Date pubDate) {
+		super();
+		this.link = link;
 		this.title = title;
 		this.description = description;
-		this.link = link;
+		this.author = author;
+		this.uri = uri;
+		this.pubDate = pubDate;
 	}
 
+
+	@Override
 	public String toString() {
-		return "Article [title = " + title + "description = "
-				+ description + ", link=" + link + "]";
+		return "Article [link=" + link + ", title=" + title + ", description=" + description + ", author=" + author
+				+ ", uri=" + uri + ", pubDate=" + pubDate + "]";
 	}
 	
+	
+	public String getLink() {
+		return link;
+	}
+	public void setLink(String link) {
+		this.link = link;
+	}
 	public String getTitle() {
 		return title;
 	}
@@ -36,10 +52,24 @@ public class Article {
 	public void setDescription(String description) {
 		this.description = description;
 	}
-	public String getLink() {
-		return link;
+	public String getAuthor() {
+		return author;
 	}
-	public void setLink(String link) {
-		this.link = link;
-	}	
+	public void setAuthor(String author) {
+		this.author = author;
+	}
+	public String getUri() {
+		return uri;
+	}
+	public void setUri(String uri) {
+		this.uri = uri;
+	}
+	public Date getPubDate() {
+		return pubDate;
+	}
+	public void setPubDate(Date pubDate) {
+		this.pubDate = pubDate;
+	}
+		
+
 }
