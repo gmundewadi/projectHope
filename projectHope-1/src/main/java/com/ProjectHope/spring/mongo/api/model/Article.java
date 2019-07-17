@@ -12,28 +12,26 @@ public class Article {
 	private String link;
 	private String title;
 	private String description;
-	private String author;
 	private String uri;
 	private Date pubDate;
 	
-	public Article(String link, String title, String description, String author, String uri, Date pubDate) {
+	public Article(String link, String title, String description, String uri, Date pubDate) {
 		super();
 		this.link = link;
 		this.title = title;
 		this.description = description;
-		this.author = author;
 		this.uri = uri;
 		this.pubDate = pubDate;
 	}
 
-
+	
+	
 	@Override
 	public String toString() {
-		return "Article [link=" + link + ", title=" + title + ", description=" + description + ", author=" + author
-				+ ", uri=" + uri + ", pubDate=" + pubDate + "]";
+		return "Article [link=" + link + ", title=" + title + ", description=" + description + ", uri=" + uri
+				+ ", pubDate=" + pubDate + "]";
 	}
-	
-	
+
 	public String getLink() {
 		return link;
 	}
@@ -51,12 +49,6 @@ public class Article {
 	}
 	public void setDescription(String description) {
 		this.description = description;
-	}
-	public String getAuthor() {
-		return author;
-	}
-	public void setAuthor(String author) {
-		this.author = author;
 	}
 	public String getUri() {
 		return uri;

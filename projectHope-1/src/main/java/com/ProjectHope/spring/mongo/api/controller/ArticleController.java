@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +26,7 @@ public class ArticleController {
 	private ArticleRepository repository;
 	
 	@GetMapping("/articles")
+	@CrossOrigin(origins = "http://localhost:3000")
 	public List<Article> getAllArticles(){
 		List<Article> articles = new ArrayList<>();
 		repository.findAll().forEach(articles::add); 
@@ -32,6 +34,7 @@ public class ArticleController {
 	}
 	
 	@GetMapping("/articles/{link}")
+	@CrossOrigin(origins = "http://localhost:3000")
 	public Article getArticle(@PathVariable String link) {
 		Article a = repository.findById(link).get();
 		return a;
@@ -43,16 +46,19 @@ public class ArticleController {
 	// application
 	
 	@DeleteMapping("/articles/{link}")
+	@CrossOrigin(origins = "http://localhost:3000")
 	public void deleteArticle(@PathVariable String link) {
 		repository.deleteById(link);
 	}
 	
 	@PostMapping(value = "/articles")
+	@CrossOrigin(origins = "http://localhost:3000")
 	public void addArticle(@RequestBody Article a) {
 		repository.save((a));
 	}
 	
 	@PutMapping("/articles/{link}")
+	@CrossOrigin(origins = "http://localhost:3000")
 	public void updateArticle(@RequestBody Article a, @PathVariable String link) {
 		repository.save((a));
 	}
