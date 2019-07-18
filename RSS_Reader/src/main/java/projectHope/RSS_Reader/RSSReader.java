@@ -30,23 +30,22 @@ import com.rometools.rome.io.FeedException;
 @SuppressWarnings("deprecation")
 public class RSSReader {
 	
-	private  MongoClient mongoClient;
+	private static  MongoClient mongoClient;
 	
-	public RSSReader() {
-		
-		MongoClientURI uri = new MongoClientURI("mongodb+srv://dbUser:projectHope@cluster0-biq2l.mongodb.net/test?retryWrites=true&w=majority");
-		mongoClient = new MongoClient(uri);
-	}
-	
+
 	public static void main(String[] args) {
-		RSSReader r = new RSSReader();
-		r.updateDB();
-		System.out.println(r.countArticles());
+		MongoClientURI uriVal = new MongoClientURI("mongodb+srv://gautam:projectHope@cluster0-biq2l.azure.mongodb.net/test?retryWrites=true&w=majority");
+    	mongoClient = new MongoClient(uriVal);
+		updateDB();
+		System.out.println(countArticles());
 	}
 	
-	public void updateDB() {
+	public static void updateDB() {
         try { 
-    		MongoDatabase database = mongoClient.getDatabase("RSS_Reader");
+
+        	
+        	MongoDatabase database = mongoClient.getDatabase("RSS_Reader");
+        	
     		MongoCollection<Document> collection = database.getCollection("Article");
         	FeedFetcher fetcher = new HttpURLFeedFetcher();
         	SyndFeed feed;
@@ -95,7 +94,7 @@ public class RSSReader {
 		}	
 	}
 	
-	public int countArticles() {
+	public static int countArticles() {
 		MongoDatabase database = mongoClient.getDatabase("RSS_Reader");
 		MongoCollection<Document> collection = database.getCollection("Article");
 		return (int) collection.countDocuments();
