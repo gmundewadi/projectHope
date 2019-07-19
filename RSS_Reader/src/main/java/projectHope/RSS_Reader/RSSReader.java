@@ -64,10 +64,7 @@ public class RSSReader {
         	while(sc.hasNextLine()) {
         		String url = sc.nextLine();
         		List<String> imageLinks= getImageLinks(url);
-        		System.out.println("/n");
-        		System.out.println(imageLinks.size());
-        		printArray(imageLinks);
-        		System.out.println("/n");
+        		
         		
         		int imageLinkIndex = 0;
         		feed = fetcher.retrieveFeed(new URL(url));
@@ -79,6 +76,7 @@ public class RSSReader {
     				String description = entry.getDescription().getValue();
     				Date pubDate = entry.getPublishedDate();
     				String uri = entry.getUri();
+    				entry.getModules().
     				
     				Document document = new Document();
     				document.append("link", link);
