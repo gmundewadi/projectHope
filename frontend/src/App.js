@@ -20,12 +20,19 @@ export default class FetchRSSFeed extends React.Component {
       <div>
         {this.state.data.map((dynamicData, key) => (
           <div>
+            <a href={dynamicData.uri}>
+              <b> {dynamicData.title}</b>
+            </a>
             <p>
-              <b>TITLE: {dynamicData.title}</b>
+              <img
+                src={dynamicData.image}
+                width="500"
+                height="300"
+                alt="image did not load"
+              />
             </p>
-            <p>PUBDATE: {dynamicData.pubDate}</p>
-            <p>URL: {dynamicData.uri}</p>
-            <p>DESCRIPTION: {dynamicData.description}</p>
+            <p> {dynamicData.uri}</p>
+            <p> {dynamicData.description}</p>
           </div>
         ))}
       </div>

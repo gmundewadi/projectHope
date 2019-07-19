@@ -46,6 +46,13 @@ public class RSSReader {
 	}
 	
 	
+	public static void printArray(List<String> arr) {
+		for(int i = 0; i<arr.size();i++) {
+			System.out.println(arr.get(i));
+		}
+	}
+	
+	
 	public static void updateDB() {
         try { 
         	MongoDatabase database = mongoClient.getDatabase("RSS_Reader");
@@ -56,17 +63,27 @@ public class RSSReader {
         	Scanner sc = new Scanner(file);
         	while(sc.hasNextLine()) {
         		String url = sc.nextLine();
-        		feed = fetcher.retrieveFeed(new URL(url));	
-    			for(Object o: feed.getEntries()) {   		
+        		List<String> imageLinks= getImageLinks(url);
+        		System.out.println("/n");
+        		System.out.println(imageLinks.size());
+        		printArray(imageLinks);
+        		System.out.println("/n");
+        		
+        		int imageLinkIndex = 0;
+        		feed = fetcher.retrieveFeed(new URL(url));
+    			for(Object o: feed.getEntries()) {
+            		
     				SyndEntry entry = (SyndEntry) o;
     				String title = entry.getTitle();
     				String link = entry.getLink();
     				String description = entry.getDescription().getValue();
     				Date pubDate = entry.getPublishedDate();
-    				String uri = entry.getUri();	
+    				String uri = entry.getUri();
+    				
     				Document document = new Document();
     				document.append("link", link);
-    				long count = collection.countDocuments(new BsonDocument("link", new BsonString(link)));    					
+    				long count = collection.countDocuments(new BsonDocument("link", new BsonString(link)));
+    				
     				if(count > 1) {
     					continue;
     				}
@@ -74,6 +91,11 @@ public class RSSReader {
     				document.append("description", description);
     				document.append("pubDate", pubDate);
     				document.append("uri", uri);
+    				document.append("image", imageLinks.get(imageLinkIndex));
+    				if(imageLinkIndex == imageLinks.size()) 
+    					imageLinkIndex = 0;
+    				
+  
     		        collection.insertOne((document));
     			}
         	}
@@ -96,8 +118,7 @@ public class RSSReader {
 		}
 	}
 		
- 
-	// BUGS present
+	// BUGS present 
 	private static List<String> getImageLinks(String url) {
 		try {
 			ArrayList<String> result = new ArrayList<>();
@@ -131,7 +152,6 @@ public class RSSReader {
 		// unreachable return statement. Only to compile.
 		return null;
 	}
-	
 
 	public static int countArticles() {
 		MongoDatabase database = mongoClient.getDatabase("RSS_Reader");

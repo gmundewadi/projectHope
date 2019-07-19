@@ -14,24 +14,30 @@ public class Article {
 	private String description;
 	private String uri;
 	private Date pubDate;
+	private String image;
 	
-	public Article(String link, String title, String description, String uri, Date pubDate) {
+	public Article(String link, String title, String description, String uri, Date pubDate, String image) {
 		super();
 		this.link = link;
 		this.title = title;
 		this.description = description;
 		this.uri = uri;
 		this.pubDate = pubDate;
+		this.image = image;
 	}
 
-	
-	
+
 	@Override
 	public String toString() {
 		return "Article [link=" + link + ", title=" + title + ", description=" + description + ", uri=" + uri
-				+ ", pubDate=" + pubDate + "]";
+				+ ", pubDate=" + pubDate + ", image=" + image + "]";
 	}
-
+	public String getImage() {
+		return image;
+	}
+	public void setImage(String image) {
+		this.image = image;
+	}
 	public String getLink() {
 		return link;
 	}
