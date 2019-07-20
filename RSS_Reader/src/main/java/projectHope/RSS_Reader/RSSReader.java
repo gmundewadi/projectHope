@@ -75,9 +75,7 @@ public class RSSReader {
     				String link = entry.getLink();
     				String description = entry.getDescription().getValue();
     				Date pubDate = entry.getPublishedDate();
-    				String uri = entry.getUri();
-    				entry.getModules().
-    				
+    				String uri = entry.getUri();    				
     				Document document = new Document();
     				document.append("link", link);
     				long count = collection.countDocuments(new BsonDocument("link", new BsonString(link)));

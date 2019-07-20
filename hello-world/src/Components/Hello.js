@@ -1,5 +1,12 @@
 import React from "react";
 
+// JSX Differences
+
+// Class -> className
+// for -> htmlFor
+// onclick -> onClick
+
+
 const Hello = () => {
   return (
     <div className="dummyClass">
@@ -7,7 +14,7 @@ const Hello = () => {
     </div>
   );
   // Stuff below is what the code above does
-  // such a waste of time use the code above
+  // such a waste of time use the JSX code above
   // return React.createElement(
   //   "div",
   //   { id: "hello", className: "dummyClass" },

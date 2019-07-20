@@ -1,0 +1,12 @@
+.column {
+  float: left;
+  width: 50%;
+  align-content: center;
+}
+
+.row:after {
+  float: right;
+  content: "";
+  width: 50%;
+  align-content: center;
+}
