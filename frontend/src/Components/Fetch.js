@@ -19,36 +19,25 @@ export class Fetch extends Component {
   render() {
     return (
       <div>
+        <h1 className="title"> Project Hope </h1>
         {this.state.articles.map((data, index) => (
           <div className="row">
             <div className="column">
-              <p>
+              <p className="Titlefont">
                 <a href={data.uri}>
                   <b>{data.title}</b>
                 </a>
               </p>
               <img
                 src={data.image}
-                widgth="200"
-                height="200"
+                widgth="100"
+                height="100"
                 alt="image did not load"
               />
-              <p>{data.description}</p>
             </div>
           </div>
         ))}
       </div>
-
-      // <div className="row">
-      //   <div className="column">
-      //     <h2>Column 1</h2>
-      //     <p>Some text..</p>
-      //   </div>
-      //   <div className="column">
-      //     <h2>Column 2</h2>
-      //     <p>Some text..</p>
-      //   </div>
-      // </div>
     );
   }
 }

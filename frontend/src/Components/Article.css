@@ -1,7 +1,18 @@
+html {
+  border: 20px soli lightgrey;
+}
+
+.title {
+  text-align: center;
+}
+
 .column {
   float: left;
   width: 50%;
   align-content: center;
+  text-align: center;
+  row-gap: 50px;
+  white-space: nowrap;
 }
 
 .row:after {
@@ -9,4 +20,12 @@
   content: "";
   width: 50%;
   align-content: center;
+}
+
+.titleFont {
+  font-size: 15px;
+}
+
+.article {
+  background-color: antiquewhite;
 }
