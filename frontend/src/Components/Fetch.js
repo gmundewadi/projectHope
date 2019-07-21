@@ -23,8 +23,8 @@ export class Fetch extends Component {
         {this.state.articles.map((data, index) => (
           <div className="row">
             <div className="column">
-              <p className="Titlefont">
-                <a href={data.uri}>
+              <p className="titlefont">
+                <a href={data.uri} target="_blank">
                   <b>{data.title}</b>
                 </a>
               </p>

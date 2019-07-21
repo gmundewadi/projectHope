@@ -65,7 +65,7 @@ public class RSSReader {
         		String url = sc.nextLine();
         		List<String> imageLinks= getImageLinks(url);
         		
-        		
+    
         		int imageLinkIndex = 0;
         		feed = fetcher.retrieveFeed(new URL(url));
     			for(Object o: feed.getEntries()) {
@@ -88,10 +88,10 @@ public class RSSReader {
     				document.append("pubDate", pubDate);
     				document.append("uri", uri);
     				document.append("image", imageLinks.get(imageLinkIndex));
+    				imageLinkIndex++;
     				if(imageLinkIndex == imageLinks.size()) 
     					imageLinkIndex = 0;
     				
-  
     		        collection.insertOne((document));
     			}
         	}
@@ -114,7 +114,7 @@ public class RSSReader {
 		}
 	}
 		
-	// BUGS present 
+	
 	private static List<String> getImageLinks(String url) {
 		try {
 			ArrayList<String> result = new ArrayList<>();
