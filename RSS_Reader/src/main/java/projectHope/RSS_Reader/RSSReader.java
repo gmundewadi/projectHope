@@ -98,22 +98,25 @@ public class RSSReader {
     				Date pubDate = entry.getPublishedDate();
     				String uri = entry.getUri();    				
     				Document document = new Document();
-    				document.append("link", link);
-    				long count = collection.countDocuments(new BsonDocument("link", new BsonString(link)));
+    				document.append("uri", uri);
+    				long count = collection.countDocuments(new BsonDocument("uri", new BsonString(uri)));
+    				System.out.println("HERE  " + count);
     				
     				if(count > 1) {
+    					System.out.println("HERE");
+    					imageLinkIndex++;
     					continue;
     				}
     				document.append("title", title);
     				document.append("description", description);
     				document.append("pubDate", pubDate);
-    				document.append("uri", uri);
+    				document.append("link", link);
     				document.append("image", imageLinks.get(imageLinkIndex));
     				imageLinkIndex++;
     				if(imageLinkIndex == imageLinks.size()) 
     					imageLinkIndex = 0;
     				
-    		        collection.insertOne((document));
+    		        collection.insertOne(document);
     			}
         	}
         	sc.close();	
