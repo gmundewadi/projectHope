@@ -1,25 +1,30 @@
 package projectHope.RSS_Reader;
 
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParserFactory;
+
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.Document;
+import org.jdom2.input.SAXBuilder;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
@@ -30,6 +35,7 @@ import com.rometools.fetcher.impl.HttpURLFeedFetcher;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.FeedException;
+
 
 @SuppressWarnings("deprecation")
 public class RSSReader {
@@ -63,9 +69,24 @@ public class RSSReader {
         	Scanner sc = new Scanner(file);
         	while(sc.hasNextLine()) {
         		String url = sc.nextLine();
-        		List<String> imageLinks= getImageLinks(url);
+        		List<String> imageLinks= new ArrayList<>();
         		
-    
+        		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        		DocumentBuilder db = dbf.newDocumentBuilder();
+        		org.w3c.dom.Document doc = db.parse(new InputSource(new URL(url).openStream()));
+        		doc.getDocumentElement().normalize();
+        		
+        		NodeList mediaGroupList = doc.getElementsByTagName("media:group");
+        		for(int i = 0; i<mediaGroupList.getLength();i++) {
+        			Element mediaGroupElement = (Element) mediaGroupList.item(i);
+            		Element mediaContentElement = (Element) mediaGroupElement.getChildNodes().item(0);
+            		String imgLink = mediaContentElement.getAttribute("url");
+            		imageLinks.add(imgLink);
+        		}
+        		
+        		printArray(imageLinks);
+                
+        		
         		int imageLinkIndex = 0;
         		feed = fetcher.retrieveFeed(new URL(url));
     			for(Object o: feed.getEntries()) {
@@ -110,6 +131,12 @@ public class RSSReader {
 			e.printStackTrace();
 		} catch (FetcherException e) {
 			System.out.println("Fetchter Exception");
+			e.printStackTrace();
+		} catch (SAXException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ParserConfigurationException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
