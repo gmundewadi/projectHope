@@ -83,9 +83,9 @@ public class RSSReader {
             		String imgLink = mediaContentElement.getAttribute("url");
             		imageLinks.add(imgLink);
         		}
-        		
+        		          
         		printArray(imageLinks);
-                
+        		System.out.println("SIZE" + (imageLinks.size()));
         		
         		int imageLinkIndex = 0;
         		feed = fetcher.retrieveFeed(new URL(url));
@@ -100,22 +100,21 @@ public class RSSReader {
     				Document document = new Document();
     				document.append("uri", uri);
     				long count = collection.countDocuments(new BsonDocument("uri", new BsonString(uri)));
-    				System.out.println("HERE  " + count);
     				
-    				if(count > 1) {
-    					System.out.println("HERE");
+    				if(count > 0) {
     					imageLinkIndex++;
     					continue;
-    				}
+					}
     				document.append("title", title);
     				document.append("description", description);
     				document.append("pubDate", pubDate);
     				document.append("link", link);
-    				document.append("image", imageLinks.get(imageLinkIndex));
-    				imageLinkIndex++;
-    				if(imageLinkIndex == imageLinks.size()) 
-    					imageLinkIndex = 0;
     				
+    					document.append("image", imageLinks.get(imageLinkIndex));
+    					imageLinkIndex++;
+    	
+    				if(imageLinkIndex == imageLinks.size())
+    					imageLinkIndex = 0;
     		        collection.insertOne(document);
     			}
         	}
