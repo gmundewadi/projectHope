@@ -21,6 +21,7 @@ import org.bson.BsonString;
 import org.bson.Document;
 import org.jdom2.input.SAXBuilder;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -63,60 +64,97 @@ public class RSSReader {
         try { 
         	MongoDatabase database = mongoClient.getDatabase("RSS_Reader");
     		MongoCollection<Document> collection = database.getCollection("Article");
-        	FeedFetcher fetcher = new HttpURLFeedFetcher();
-        	SyndFeed feed;
         	File file = new File("rssFeeds");
         	Scanner sc = new Scanner(file);
         	while(sc.hasNextLine()) {
         		String url = sc.nextLine();
-        		List<String> imageLinks= new ArrayList<>();
-        		
         		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         		DocumentBuilder db = dbf.newDocumentBuilder();
         		org.w3c.dom.Document doc = db.parse(new InputSource(new URL(url).openStream()));
         		doc.getDocumentElement().normalize();
+
+        		NodeList itemList = doc.getElementsByTagName("item");
+        		for(int i = 0; i<itemList.getLength();i++) {
+        			
+        			
+        			Node node = itemList.item(i);
+        			Element item = (Element) node;
+        			
+        			String title;
+        			NodeList titleList = item.getElementsByTagName("title");
+        			Element titleElement = (Element) titleList.item(0);
+        			titleList = titleElement.getChildNodes();
+        			title = titleList.item(0).getNodeValue();
+        				
+    
+        			
+        			String description;
+        			NodeList descList = item.getElementsByTagName("description");
+        			Element descElement = (Element) descList.item(0);
+        			if(descElement == null) {
+        				description = "no description found";
+        			}
+        			else {
+        				descList = descElement.getChildNodes();	
+            			description = descList.item(0).getNodeValue();
+        			}
+       
+        			
+        			String link;
+        			NodeList linkList = item.getElementsByTagName("link");
+        			Element linkElement = (Element) linkList.item(0);
+        			if(linkElement == null) {
+        				link = "no link found";
+        			}
+        			else {
+        				linkList = linkElement.getChildNodes();
+        				link = linkList.item(0).getNodeValue();
+        			}
         		
-        		NodeList mediaGroupList = doc.getElementsByTagName("media:group");
-        		for(int i = 0; i<mediaGroupList.getLength();i++) {
-        			Element mediaGroupElement = (Element) mediaGroupList.item(i);
-            		Element mediaContentElement = (Element) mediaGroupElement.getChildNodes().item(0);
-            		String imgLink = mediaContentElement.getAttribute("url");
-            		imageLinks.add(imgLink);
-        		}
-        		          
-        		printArray(imageLinks);
-        		System.out.println("SIZE" + (imageLinks.size()));
-        		
-        		int imageLinkIndex = 0;
-        		feed = fetcher.retrieveFeed(new URL(url));
-    			for(Object o: feed.getEntries()) {
-            		
-    				SyndEntry entry = (SyndEntry) o;
-    				String title = entry.getTitle();
-    				String link = entry.getLink();
-    				String description = entry.getDescription().getValue();
-    				Date pubDate = entry.getPublishedDate();
-    				String uri = entry.getUri();    				
+        			String pubDate;
+        			NodeList pubDateList = item.getElementsByTagName("pubDate");
+        			Element pubDateElement = (Element) pubDateList.item(0);
+        			if(pubDateElement == null) {
+        				pubDate = "no publication date found";
+        			}
+        			else {
+        				pubDateList = pubDateElement.getChildNodes();
+        				pubDate = pubDateList.item(0).getNodeValue();
+        			}
+        			
+        			String imgLink;
+        			NodeList mediaGroupList = item.getElementsByTagName("media:group");
+        			Element mediaGroupElement = (Element) mediaGroupList.item(0);
+        			if(mediaGroupElement == null) {
+        				imgLink = "no image found";
+
+        			}
+        			else {
+        				Element mediaContentElement = (Element) mediaGroupElement.getChildNodes().item(0);
+        				imgLink = mediaContentElement.getAttribute("url");     	
+        			}
+        			
     				Document document = new Document();
-    				document.append("uri", uri);
-    				long count = collection.countDocuments(new BsonDocument("uri", new BsonString(uri)));
+            		
     				
+    				document.append("link", link);
+
+    				long count = collection.countDocuments(new BsonDocument("uri", new BsonString(link)));
     				if(count > 0) {
-    					imageLinkIndex++;
     					continue;
 					}
-    				document.append("title", title);
+    				
+            		document.append("title", title);
     				document.append("description", description);
     				document.append("pubDate", pubDate);
     				document.append("link", link);
-    				
-    					document.append("image", imageLinks.get(imageLinkIndex));
-    					imageLinkIndex++;
-    	
-    				if(imageLinkIndex == imageLinks.size())
-    					imageLinkIndex = 0;
+    				document.append("image",imgLink);
     		        collection.insertOne(document);
-    			}
+    			
+        					
+        		}
+
+        		
         	}
         	sc.close();	
         } catch (IllegalArgumentException e) {
@@ -128,12 +166,6 @@ public class RSSReader {
 		} catch (IOException e) {
 			System.out.println("IO Exception");
 			e.printStackTrace();
-		} catch (FeedException e) {
-			System.out.println("Feed Exception");
-			e.printStackTrace();
-		} catch (FetcherException e) {
-			System.out.println("Fetchter Exception");
-			e.printStackTrace();
 		} catch (SAXException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -143,41 +175,6 @@ public class RSSReader {
 		}
 	}
 		
-	
-	private static List<String> getImageLinks(String url) {
-		try {
-			ArrayList<String> result = new ArrayList<>();
-			URL rssURL = new URL(url);
-			BufferedReader in = new BufferedReader(new InputStreamReader(rssURL.openStream()));
-			String line;
-			while((line = in.readLine()) != null) {
-				if(line.contains(("<media:content"))) {
-					int firstPos = line.indexOf("<media:content");
-					String temp = line.substring((firstPos));
-					temp = temp.replace("<media:content medium='image' url =", "");
-					int lastPos = temp.indexOf("/><media:content");
-					temp = temp.substring(0, lastPos);
-					temp = temp.replace("<media:content", "");
-					temp = temp.replace("medium=\"image\"", "");
-					temp = temp.replace("  url=\"","");
-					temp = temp.replace("\" height=\"619\" width=\"1100\" ","");
-					result.add(temp);
-				}
-			}
-			in.close();
-			return result;
-			
-		} catch (MalformedURLException e) {
-			System.out.println("MalformedURL Exception");
-			e.printStackTrace();
-		} catch (IOException e) {
-			System.out.println("IO Exception");
-			e.printStackTrace();
-		}
-		// unreachable return statement. Only to compile.
-		return null;
-	}
-
 	public static int countArticles() {
 		MongoDatabase database = mongoClient.getDatabase("RSS_Reader");
 		MongoCollection<Document> collection = database.getCollection("Article");

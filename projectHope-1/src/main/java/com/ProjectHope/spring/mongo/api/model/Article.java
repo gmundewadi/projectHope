@@ -13,10 +13,10 @@ public class Article {
 	private String title;
 	private String description;
 	private String uri;
-	private Date pubDate;
+	private String pubDate;
 	private String image;
 	
-	public Article(String link, String title, String description, String uri, Date pubDate, String image) {
+	public Article(String link, String title, String description, String uri, String pubDate, String image) {
 		super();
 		this.link = link;
 		this.title = title;
@@ -62,10 +62,10 @@ public class Article {
 	public void setUri(String uri) {
 		this.uri = uri;
 	}
-	public Date getPubDate() {
+	public String getPubDate() {
 		return pubDate;
 	}
-	public void setPubDate(Date pubDate) {
+	public void setPubDate(String pubDate) {
 		this.pubDate = pubDate;
 	}
 		

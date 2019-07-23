@@ -24,7 +24,7 @@ export class Fetch extends Component {
           <div className="row">
             <div className="column">
               <p className="titlefont">
-                <a href={data.uri} target="_blank">
+                <a href={data.link} target="_blank">
                   <b>{data.title}</b>
                 </a>
               </p>
