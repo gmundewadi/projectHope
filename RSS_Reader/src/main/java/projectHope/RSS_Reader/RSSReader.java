@@ -37,130 +37,116 @@ import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.FeedException;
 
-
 @SuppressWarnings("deprecation")
 public class RSSReader {
-	
-	private static  MongoClient mongoClient;
-	
+
+	private static MongoClient mongoClient;
 
 	public static void main(String[] args) {
-		MongoClientURI uriVal = new MongoClientURI("mongodb+srv://gautam:projectHope@cluster0-biq2l.azure.mongodb.net/test?retryWrites=true&w=majority");
-    	mongoClient = new MongoClient(uriVal);
+		MongoClientURI uriVal = new MongoClientURI(
+				"mongodb+srv://gautam:projectHope@cluster0-biq2l.azure.mongodb.net/test?retryWrites=true&w=majority");
+		mongoClient = new MongoClient(uriVal);
 		updateDB();
 		System.out.println(countArticles());
-		
+
 	}
-	
-	
+
 	public static void printArray(List<String> arr) {
-		for(int i = 0; i<arr.size();i++) {
+		for (int i = 0; i < arr.size(); i++) {
 			System.out.println(arr.get(i));
 		}
 	}
-	
-	
+
 	public static void updateDB() {
-        try { 
-        	MongoDatabase database = mongoClient.getDatabase("RSS_Reader");
-    		MongoCollection<Document> collection = database.getCollection("Article");
-        	File file = new File("rssFeeds");
-        	Scanner sc = new Scanner(file);
-        	while(sc.hasNextLine()) {
-        		String url = sc.nextLine();
-        		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        		DocumentBuilder db = dbf.newDocumentBuilder();
-        		org.w3c.dom.Document doc = db.parse(new InputSource(new URL(url).openStream()));
-        		doc.getDocumentElement().normalize();
+		try {
+			MongoDatabase database = mongoClient.getDatabase("RSS_Reader");
+			MongoCollection<Document> collection = database.getCollection("Article");
+			File file = new File("rssFeeds");
+			Scanner sc = new Scanner(file);
+			while (sc.hasNextLine()) {
+				String url = sc.nextLine();
+				DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+				DocumentBuilder db = dbf.newDocumentBuilder();
+				org.w3c.dom.Document doc = db.parse(new InputSource(new URL(url).openStream()));
+				doc.getDocumentElement().normalize();
 
-        		NodeList itemList = doc.getElementsByTagName("item");
-        		for(int i = 0; i<itemList.getLength();i++) {
-        			
-        			
-        			Node node = itemList.item(i);
-        			Element item = (Element) node;
-        			
-        			String title;
-        			NodeList titleList = item.getElementsByTagName("title");
-        			Element titleElement = (Element) titleList.item(0);
-        			titleList = titleElement.getChildNodes();
-        			title = titleList.item(0).getNodeValue();
-        				
-    
-        			
-        			String description;
-        			NodeList descList = item.getElementsByTagName("description");
-        			Element descElement = (Element) descList.item(0);
-        			if(descElement == null) {
-        				description = "no description found";
-        			}
-        			else {
-        				descList = descElement.getChildNodes();	
-            			description = descList.item(0).getNodeValue();
-        			}
-       
-        			
-        			String link;
-        			NodeList linkList = item.getElementsByTagName("link");
-        			Element linkElement = (Element) linkList.item(0);
-        			if(linkElement == null) {
-        				link = "no link found";
-        			}
-        			else {
-        				linkList = linkElement.getChildNodes();
-        				link = linkList.item(0).getNodeValue();
-        			}
-        		
-        			String pubDate;
-        			NodeList pubDateList = item.getElementsByTagName("pubDate");
-        			Element pubDateElement = (Element) pubDateList.item(0);
-        			if(pubDateElement == null) {
-        				pubDate = "no publication date found";
-        			}
-        			else {
-        				pubDateList = pubDateElement.getChildNodes();
-        				pubDate = pubDateList.item(0).getNodeValue();
-        			}
-        			
-        			String imgLink;
-        			NodeList mediaGroupList = item.getElementsByTagName("media:group");
-        			Element mediaGroupElement = (Element) mediaGroupList.item(0);
-        			if(mediaGroupElement == null) {
-        				imgLink = "no image found";
+				NodeList itemList = doc.getElementsByTagName("item");
+				for (int i = 0; i < itemList.getLength(); i++) {
 
-        			}
-        			else {
-        				Element mediaContentElement = (Element) mediaGroupElement.getChildNodes().item(0);
-        				imgLink = mediaContentElement.getAttribute("url");     	
-        			}
-        			
-    				Document document = new Document();
-            		
-    				
-    				document.append("link", link);
+					Node node = itemList.item(i);
+					Element item = (Element) node;
 
-    				long count = collection.countDocuments(new BsonDocument("uri", new BsonString(link)));
-    				if(count > 0) {
-    					continue;
+					String title;
+					NodeList titleList = item.getElementsByTagName("title");
+					Element titleElement = (Element) titleList.item(0);
+					titleList = titleElement.getChildNodes();
+					title = titleList.item(0).getNodeValue();
+
+					String description;
+					NodeList descList = item.getElementsByTagName("description");
+					Element descElement = (Element) descList.item(0);
+					if (descElement == null) {
+						description = "no description found";
+					} else {
+						descList = descElement.getChildNodes();
+						description = descList.item(0).getNodeValue();
 					}
-    				
-            		document.append("title", title);
-    				document.append("description", description);
-    				document.append("pubDate", pubDate);
-    				document.append("link", link);
-    				document.append("image",imgLink);
-    		        collection.insertOne(document);
-    			
-        					
-        		}
 
-        		
-        	}
-        	sc.close();	
-        } catch (IllegalArgumentException e) {
+					String link;
+					NodeList linkList = item.getElementsByTagName("guid");
+					Element linkElement = (Element) linkList.item(0);
+					if (linkElement == null) {
+						link = "no link found";
+					} else {
+						linkList = linkElement.getChildNodes();
+						link = linkList.item(0).getNodeValue();
+					}
+
+					String pubDate;
+					NodeList pubDateList = item.getElementsByTagName("pubDate");
+					Element pubDateElement = (Element) pubDateList.item(0);
+					if (pubDateElement == null) {
+						pubDate = "no publication date found";
+					} else {
+						pubDateList = pubDateElement.getChildNodes();
+						pubDate = pubDateList.item(0).getNodeValue();
+					}
+
+					String imgLink;
+					NodeList mediaGroupList = item.getElementsByTagName("media:group");
+					Element mediaGroupElement = (Element) mediaGroupList.item(0);
+					if (mediaGroupElement == null) {
+						imgLink = "no image found";
+
+					} else {
+						Element mediaContentElement = (Element) mediaGroupElement.getChildNodes().item(0);
+						imgLink = mediaContentElement.getAttribute("url");
+					}
+
+					Document document = new Document();
+
+					document.append("title", title);
+
+					long count = collection.countDocuments(new BsonDocument("title", new BsonString(title)));
+					if (count != 0) {
+						continue;
+					}
+
+					document.append("link", link); // field used for identification
+					document.append("url", link);
+					document.append("description", description);
+					document.append("pubDate", pubDate);
+					document.append("image", imgLink);
+					collection.insertOne(document);
+
+				}
+
+			}
+			sc.close();
+		} catch (IllegalArgumentException e) {
 			System.out.println("Illegal Arguement Exception");
 			e.printStackTrace();
-        } catch (MalformedURLException e) {
+		} catch (MalformedURLException e) {
 			System.out.println("MalformedURL Exception");
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -174,7 +160,7 @@ public class RSSReader {
 			e.printStackTrace();
 		}
 	}
-		
+
 	public static int countArticles() {
 		MongoDatabase database = mongoClient.getDatabase("RSS_Reader");
 		MongoCollection<Document> collection = database.getCollection("Article");
