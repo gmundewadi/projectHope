@@ -23,6 +23,21 @@ public class ArticleController {
 	@Autowired
 	private ArticleRepository repository;
 
+	
+	
+	// numberOfArticles = number of newest articles
+	@GetMapping("/articles/query/{numberOfArticles}")
+	@CrossOrigin(origins = "http://localhost:3000")
+	public List<Article> getNumberOfArticles(@PathVariable int numberOfArticles) {
+		List<Article> articles = new ArrayList<>();
+		List<Article> result = repository.findAll();
+		int totalArticles = result.size();
+		for(int i = 0; i<numberOfArticles;i++) {
+			articles.add(result.get(totalArticles - i - 1));
+		}
+		return articles;
+	}
+	
 	@GetMapping("/articles")
 	@CrossOrigin(origins = "http://localhost:3000")
 	public List<Article> getAllArticles() {

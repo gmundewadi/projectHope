@@ -10,7 +10,7 @@ export class Fetch extends Component {
   }
 
   async componentDidMount() {
-    const url = "http://localhost:8080/articles/";
+    const url = "http://localhost:8080/articles/query/100";
     const response = await fetch(url);
     const data = await response.json();
     this.setState({ articles: data });
