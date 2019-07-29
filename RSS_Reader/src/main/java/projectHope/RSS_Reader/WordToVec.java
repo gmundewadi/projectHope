@@ -40,8 +40,8 @@ public class WordToVec {
 				"mongodb+srv://gautam:projectHope@cluster0-biq2l.azure.mongodb.net/test?retryWrites=true&w=majority");
 		mongoClient = new MongoClient(uriVal);
 		WordToVec v = new WordToVec();
-		v.updateWordFile();
-		v.wordToVec();
+		//v.updateWordFile();
+		v.buildModel();
 
 	}
 
@@ -62,7 +62,7 @@ public class WordToVec {
 		}
 	}
 
-	public void wordToVec() {
+	public void buildModel() {
 		try {
 			SentenceIterator iter = new LineSentenceIterator(new File("./words.txt"));
 
@@ -95,6 +95,11 @@ public class WordToVec {
 
 			log.info("Writing word vectors to text file....");
 	        WordVectorSerializer.writeWordVectors(vec, "./vectors.txt");
+	        
+	        log.info("Closest Words:");
+	        Collection<String> lst = vec.wordsNearest("politics", 10);
+	        System.out.println(lst);
+	        
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
