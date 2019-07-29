@@ -1,6 +1,7 @@
 package projectHope.RSS_Reader;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collection;
@@ -18,8 +19,10 @@ import com.mongodb.client.MongoDatabase;
 import org.datavec.api.util.ClassPathResource;
 
 import org.datavec.api.util.ClassPathResource;
+import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
+import org.deeplearning4j.text.sentenceiterator.LineSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
@@ -61,11 +64,10 @@ public class WordToVec {
 
 	public void wordToVec() {
 		try {
-			String filePath = new ClassPathResource("words.txt").getFile().getAbsolutePath();
+			SentenceIterator iter = new LineSentenceIterator(new File("./words.txt"));
 
 			log.info("Load & Vectorize Sentences....");
-			// Strip white space before and after for each line
-			SentenceIterator iter = new BasicLineIterator(filePath);
+			// Strip white space before and after for each line &
 			// Split on white spaces in the line to get words
 			TokenizerFactory t = new DefaultTokenizerFactory();
 
@@ -78,19 +80,22 @@ public class WordToVec {
 			t.setTokenPreProcessor(new CommonPreprocessor());
 
 			log.info("Building model....");
-			Word2Vec vec = new Word2Vec.Builder().minWordFrequency(5).iterations(1).layerSize(100).seed(42)
-					.windowSize(5).iterate(iter).tokenizerFactory(t).build();
+			Word2Vec vec = new Word2Vec.Builder()
+					.minWordFrequency(2)
+					.iterations(1)
+					.layerSize(100)
+					.seed(42)
+					.windowSize(5)
+					.iterate(iter)
+					.tokenizerFactory(t)
+					.build();
 
 			log.info("Fitting Word2Vec model....");
 			vec.fit();
 
 			log.info("Writing word vectors to text file....");
-
-			// Prints out the closest 10 words to "day". An example on what to do with these
-			// Word Vectors.
-			log.info("Closest Words:");
-			Collection<String> lst = vec.wordsNearestSum("day", 10);
-			log.info("10 Words closest to 'day': {}", lst);
+	        WordVectorSerializer.writeWordVectors(vec, "./vectors.txt");
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
