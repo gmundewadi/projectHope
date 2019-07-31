@@ -118,7 +118,6 @@ public class Vectorize {
 				words.clear();
 				String result = wordVectors.toString();
 				writer.write(result + "\n");
-				System.out.println("test");
 			}
 			sc.close();
 			writer.close();
