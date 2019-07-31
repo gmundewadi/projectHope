@@ -66,7 +66,6 @@ public class WordToVec {
 
 	private static MongoClient mongoClient;
 	private static Logger log = LoggerFactory.getLogger(WordToVec.class);
-	// NEED TRAINED DATA
     public static final String DATA_PATH = FilenameUtils.concat(
     		System.getProperty("java.io.tmpdir"), "TRAINED_DATA_PATH");
 
@@ -76,7 +75,7 @@ public class WordToVec {
 				"mongodb+srv://gautam:projectHope@cluster0-biq2l.azure.mongodb.net/test?retryWrites=true&w=majority");
 		mongoClient = new MongoClient(uriVal);
 		WordToVec v = new WordToVec();
-		//v.updateWordFile();
+		v.updateWordFile();
 		v.wordToVec();
 
 	}
