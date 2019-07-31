@@ -117,7 +117,8 @@ public class Vectorize {
 				INDArray wordVectors = word2Vec.getWordVectorsMean(words);
 				words.clear();
 				String result = wordVectors.toString();
-				writer.write(result + "\n");	
+				writer.write(result + "\n");
+				System.out.println("test");
 			}
 			sc.close();
 			writer.close();
