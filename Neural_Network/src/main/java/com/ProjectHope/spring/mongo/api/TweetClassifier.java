@@ -123,10 +123,7 @@ public class TweetClassifier {
 		RecordReader rr = new CSVRecordReader();
 		rr.initialize(new FileSplit(new ClassPathResource(csvFileClasspath).getFile()));
 		DataSetIterator iterator = new RecordReaderDataSetIterator(rr, batchSize, labelIndex, numClasses);
-		System.out.println("-----------------\n");
 		System.out.println(iterator.toString());
-		System.out.println("-----------------\n");
-
 		return iterator.next();
 	}
 

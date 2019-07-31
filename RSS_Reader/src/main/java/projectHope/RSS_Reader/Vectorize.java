@@ -4,12 +4,14 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Scanner;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -62,10 +64,11 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WordToVec {
+public class Vectorize {
 
 	private static MongoClient mongoClient;
-	private static Logger log = LoggerFactory.getLogger(WordToVec.class);
+	private static Logger log = LoggerFactory.getLogger(Vectorize.class);
+	
     public static final String DATA_PATH = FilenameUtils.concat(
     		System.getProperty("java.io.tmpdir"), "TRAINED_DATA_PATH");
 
@@ -74,13 +77,14 @@ public class WordToVec {
 		MongoClientURI uriVal = new MongoClientURI(
 				"mongodb+srv://gautam:projectHope@cluster0-biq2l.azure.mongodb.net/test?retryWrites=true&w=majority");
 		mongoClient = new MongoClient(uriVal);
-		WordToVec v = new WordToVec();
-		v.updateWordFile();
-		v.wordToVec();
+		Vectorize v = new Vectorize();
+		v.sentenceToVec();
+		//v.updateArticleTitles();
+		//v.wordToVec();
 
 	}
 
-	public void updateWordFile() {
+	public void updateArticleTitles() {
 		MongoDatabase mongoDB = mongoClient.getDatabase("RSS_Reader");
 		MongoCollection<Document> collection = mongoDB.getCollection("Article");
 		FindIterable<Document> findIterable = collection.find(new Document());
@@ -96,12 +100,40 @@ public class WordToVec {
 			e1.printStackTrace();
 		}
 	}
+	
+	
+	public void sentenceToVec() {
+		try {
+			Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel("./wordVectors.txt");
+			BufferedWriter writer = new BufferedWriter(new FileWriter("./sentenceVectors.txt"));
+			File file = new File("words.txt");
+			Scanner sc = new Scanner(file);
+			ArrayList<String> words = new ArrayList<>();
+			while (sc.hasNextLine()) {
+				String tweet = sc.nextLine().replaceAll("[^a-zA-Z0-9\\s]", "");
+				for(String word : tweet.split(" ")) {
+				    words.add(word);
+				}
+				INDArray wordVectors = word2Vec.getWordVectorsMean(words);
+				words.clear();
+				String result = wordVectors.toString();
+				writer.write(result + "\n");	
+			}
+			sc.close();
+			writer.close();
+		} catch (IOException e) {
+			
+			e.printStackTrace();
+		}
+		
+		
+	}
 
 	public void wordToVec() {
 		try {
 			SentenceIterator iter = new LineSentenceIterator(new File("./words.txt"));
 
-			log.info("Load & Vectorize Sentences....");
+			log.info("Load & Vectorize titles into words....");
 			// Strip white space before and after for each line &
 			// Split on white spaces in the line to get words
 			TokenizerFactory t = new DefaultTokenizerFactory();
@@ -130,8 +162,9 @@ public class WordToVec {
 			vec.fit();
 
 			log.info("Writing word vectors to text file....");
-	        WordVectorSerializer.writeWordVectors(vec, "./vectors.txt");
+	        WordVectorSerializer.writeWordVectors(vec, "./wordVectors.txt");
 			
+	        
 	        // Retrive Word2Vec
 	        // Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel("./vectors.txt");
 	        
