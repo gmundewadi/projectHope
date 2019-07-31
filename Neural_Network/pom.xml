@@ -10,15 +10,13 @@
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.ProjectHope</groupId>
-	<artifactId>spring-mongodb</artifactId>
+	<artifactId>Neural_Network</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>Neural_Network_Model</name>
+	<name>Neural_Network</name>
 	<description>ProjectHope positive news aggregator </description>
 
 	<properties>
 		<java.version>11</java.version>
-		<dl4j.version>0.9.1</dl4j.version>
-
 	</properties>
 
 	<dependencies>
@@ -53,7 +51,6 @@
 			<artifactId>deeplearning4j-nlp</artifactId>
 			<version>1.0.0-beta4</version>
 		</dependency>
-
 	</dependencies>
 
 	<build>
