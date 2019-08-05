@@ -1,21 +1,21 @@
 package com.ProjectHope.spring.mongo.api;
 
+import java.util.Arrays;
+
+import org.nd4j.linalg.api.ndarray.INDArray;
+
 public class Tweet {
 
-	private int sentiment;
-	private String text;
+	private int sentiment; // 0 is negative. 4 is positive
+	private float[] tweetArray; // sentence to vector representation of tweet
 
 	private String tweetClass;
 
-	public Tweet(int sentiment, String text) {
+	
+	public Tweet(int sentiment, float[] tweetArr) {
 		super();
 		this.sentiment = sentiment;
-		this.text = text;
-	}
-
-	@Override
-	public String toString() {
-		return "Tweet [sentiment=" + sentiment + ", text=" + text + ", tweetClass=" + tweetClass + "]";
+		this.tweetArray = tweetArr;
 	}
 
 	public int getSentiment() {
@@ -26,12 +26,12 @@ public class Tweet {
 		this.sentiment = sentiment;
 	}
 
-	public String getText() {
-		return text;
+	public float[] getTweetArray() {
+		return tweetArray;
 	}
 
-	public void setText(String text) {
-		this.text = text;
+	public void setTweetArray(float[] tweetArray) {
+		this.tweetArray = tweetArray;
 	}
 
 	public String getTweetClass() {
@@ -41,5 +41,11 @@ public class Tweet {
 	public void setTweetClass(String tweetClass) {
 		this.tweetClass = tweetClass;
 	}
+
+	@Override
+	public String toString() {
+		return "Tweet [sentiment=" + sentiment + ", tweetArray=" + tweetArray.toString();
+	}
+	
 
 }

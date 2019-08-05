@@ -9,6 +9,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -83,24 +84,26 @@ public class Vectorize {
 
 	public static void main(String args[]) {
 		Vectorize v = new Vectorize();
-		// v.csvReader();
-		// v.wordToVec();
+		v.clearFiles();
+		System.out.println("----------------FILES CLEARED----------------");
+		v.csvReader();
+		System.out.println("----------------WORDS.TXT UPDATED----------------");
+		v.wordToVec();
+		System.out.println("----------------WORD VECTORS UPDATED----------------");
 		v.sentenceToVec();
-
-		// v.updateArticleTitles();
-
+		System.out.println("----------------SENTENCE VECTORS UPDATED----------------");
 		System.out.println("----------------VECTORIZATION COMPLETE----------------");
 	}
 
 	public void csvReader() {
 		try {
 			Reader reader = new BufferedReader(
-					new InputStreamReader(new FileInputStream("./train-twitter.csv"), "utf-8"));
+					new InputStreamReader(new FileInputStream("./test-twitter.csv"), "utf-8"));
 			CSVReader csvReader = new CSVReader(reader);
 			String[] nextRecord;
 			BufferedWriter writer = new BufferedWriter(new FileWriter("./words.txt"));
 			while ((nextRecord = csvReader.readNext()) != null) {
-				String tweet = nextRecord[5].replaceAll("[^a-zA-Z0-9\\s]", "");
+				String tweet = nextRecord[1].replaceAll("[^a-zA-Z0-9\\s]", "");
 				writer.write(tweet + "\n");
 			}
 			writer.close();
@@ -151,6 +154,9 @@ public class Vectorize {
 					String result = wordVectors.toString();
 					writer.write(result + "\n");
 				}
+				else {
+					writer.write("NO SENTENCE VECTOR" + "\n");
+				}
 			}
 			sc.close();
 			writer.close();
@@ -158,6 +164,20 @@ public class Vectorize {
 			e.printStackTrace();
 		}
 
+	}
+
+	
+	public void clearFiles() {
+		try {
+			PrintWriter wordVecs = new PrintWriter("./wordVectors.txt");
+			PrintWriter sentenceVecs = new PrintWriter("./sentenceVectors.txt");
+			PrintWriter words = new PrintWriter("./words.txt");
+			wordVecs.close();
+			words.close();
+			sentenceVecs.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void wordToVec() {

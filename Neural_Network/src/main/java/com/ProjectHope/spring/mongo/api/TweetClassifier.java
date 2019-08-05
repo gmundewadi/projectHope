@@ -133,10 +133,23 @@ public class TweetClassifier {
 		INDArray features = testData.getFeatures();		
 		for (int i = 0; i < features.rows(); i++) {
 			INDArray slice = features.slice(i);
-			Tweet t = new Tweet(slice.getInt(1), slice.getString(1));
+			float[] tweetArr = stringToFloatArray(slice.getString(1));
+			Tweet t = new Tweet(slice.getInt(1), tweetArr);
 			iTweets.put(i, t);
 		}
 		return iTweets;
+	}
+	
+	private float[] stringToFloatArray(String value) {
+		value = value.replaceAll("[-+.^:,]", "");
+		String[] stringFloats = value.split(" ");
+		float[] floatArray = new float[stringFloats.length];
+
+		for (int i = 0; i < stringFloats.length; i++) {
+			float f = Float.parseFloat(stringFloats[i]);
+			floatArray[i] = f;
+		}
+		return floatArray;
 	}
 
 	private void classify(INDArray output, Map<Integer, Tweet> flowers) {
