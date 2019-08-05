@@ -1,9 +1,17 @@
 package projectHope.RSS_Reader;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -24,6 +32,8 @@ import com.mongodb.MongoClientURI;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+
+import au.com.bytecode.opencsv.CSVReader;
 
 import org.datavec.api.util.ClassPathResource;
 
@@ -66,25 +76,44 @@ import org.slf4j.LoggerFactory;
 
 public class Vectorize {
 
-	private static MongoClient mongoClient;
 	private static Logger log = LoggerFactory.getLogger(Vectorize.class);
-	
-    public static final String DATA_PATH = FilenameUtils.concat(
-    		System.getProperty("java.io.tmpdir"), "TRAINED_DATA_PATH");
 
+	public static final String DATA_PATH = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),
+			"TRAINED_DATA_PATH");
 
 	public static void main(String args[]) {
-		MongoClientURI uriVal = new MongoClientURI(
-				"mongodb+srv://gautam:projectHope@cluster0-biq2l.azure.mongodb.net/test?retryWrites=true&w=majority");
-		mongoClient = new MongoClient(uriVal);
 		Vectorize v = new Vectorize();
+		// v.csvReader();
+		// v.wordToVec();
 		v.sentenceToVec();
-		//v.updateArticleTitles();
-		//v.wordToVec();
 
+		// v.updateArticleTitles();
+
+		System.out.println("----------------VECTORIZATION COMPLETE----------------");
+	}
+
+	public void csvReader() {
+		try {
+			Reader reader = new BufferedReader(
+					new InputStreamReader(new FileInputStream("./train-twitter.csv"), "utf-8"));
+			CSVReader csvReader = new CSVReader(reader);
+			String[] nextRecord;
+			BufferedWriter writer = new BufferedWriter(new FileWriter("./words.txt"));
+			while ((nextRecord = csvReader.readNext()) != null) {
+				String tweet = nextRecord[5].replaceAll("[^a-zA-Z0-9\\s]", "");
+				writer.write(tweet + "\n");
+			}
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void updateArticleTitles() {
+
+		MongoClientURI uriVal = new MongoClientURI(
+				"mongodb+srv://gautam:projectHope@cluster0-biq2l.azure.mongodb.net/test?retryWrites=true&w=majority");
+		MongoClient mongoClient = new MongoClient(uriVal);
 		MongoDatabase mongoDB = mongoClient.getDatabase("RSS_Reader");
 		MongoCollection<Document> collection = mongoDB.getCollection("Article");
 		FindIterable<Document> findIterable = collection.find(new Document());
@@ -93,15 +122,13 @@ public class Vectorize {
 			for (Document d : findIterable) {
 				String title = d.getString("title");
 				writer.write(title + "\n");
-
 			}
 			writer.close();
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
 	}
-	
-	
+
 	public void sentenceToVec() {
 		try {
 			Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel("./wordVectors.txt");
@@ -111,22 +138,26 @@ public class Vectorize {
 			ArrayList<String> words = new ArrayList<>();
 			while (sc.hasNextLine()) {
 				String tweet = sc.nextLine().replaceAll("[^a-zA-Z0-9\\s]", "");
-				for(String word : tweet.split(" ")) {
-				    words.add(word);
+				for (String word : tweet.split(" ")) {
+					// if length is not zero then word frequency is greater than 2
+					if (word2Vec.getWordVector(word) != null) {
+						words.add(word);
+					}
 				}
-				INDArray wordVectors = word2Vec.getWordVectorsMean(words);
-				words.clear();
-				String result = wordVectors.toString();
-				writer.write(result + "\n");
+				// if words.size equals 0. Then the tweet is made up of words that are all different
+				if (words.size() > 0) {
+					INDArray wordVectors = word2Vec.getWordVectorsMean(words);
+					words.clear();
+					String result = wordVectors.toString();
+					writer.write(result + "\n");
+				}
 			}
 			sc.close();
 			writer.close();
 		} catch (IOException e) {
-			
 			e.printStackTrace();
 		}
-		
-		
+
 	}
 
 	public void wordToVec() {
@@ -144,30 +175,23 @@ public class Vectorize {
 			 * some special symbols are stripped off. Additionally it forces lower case for
 			 * all tokens.
 			 */
-			
+
 			t.setTokenPreProcessor(new CommonPreprocessor());
 
 			log.info("Building model....");
-			Word2Vec vec = new Word2Vec.Builder()
-					.minWordFrequency(2)
-					.iterations(1)
-					.layerSize(100)
-					.seed(42)
-					.windowSize(5)
-					.iterate(iter)
-					.tokenizerFactory(t)
-					.build();
+			Word2Vec vec = new Word2Vec.Builder().minWordFrequency(2).iterations(1).layerSize(100).seed(42)
+					.windowSize(5).iterate(iter).tokenizerFactory(t).build();
 
 			log.info("Fitting Word2Vec model....");
 			vec.fit();
 
 			log.info("Writing word vectors to text file....");
-	        WordVectorSerializer.writeWordVectors(vec, "./wordVectors.txt");
-			
-	        
-	        // Retrive Word2Vec
-	        // Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel("./vectors.txt");
-	        
+			WordVectorSerializer.writeWordVectors(vec, "./wordVectors.txt");
+
+			// How to retrive Word2Vec
+			// Word2Vec word2Vec =
+			// WordVectorSerializer.readWord2VecModel("WORDVECS_FILE_PATH");
+
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

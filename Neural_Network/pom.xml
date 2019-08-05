@@ -51,6 +51,12 @@
 			<artifactId>deeplearning4j-nlp</artifactId>
 			<version>1.0.0-beta4</version>
 		</dependency>
+		<dependency>
+			<groupId>com.opencsv</groupId>
+			<artifactId>opencsv</artifactId>
+			<version>4.1</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>

@@ -1,8 +1,10 @@
 package com.ProjectHope.spring.mongo.api;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
@@ -33,7 +35,6 @@ public class TweetClassifier {
 	public TweetClassifier() {
 		classifiers = new HashMap<>();
 		classifiers.put(0, "negative");
-		classifiers.put(2, "neutral");
 		classifiers.put(4, "positive");
 	}
 
@@ -43,7 +44,7 @@ public class TweetClassifier {
 
 		
 		int labelIndex = 0;
-		int numClasses = 3;
+		int numClasses = 2;
 
 		int batchSizeTraining = 100;
 		// ERROR ON LINE 50. Number format exception.
@@ -129,7 +130,7 @@ public class TweetClassifier {
 
 	private Map<Integer, Tweet> objectify(DataSet testData) {
 		Map<Integer, Tweet> iTweets = new HashMap<>();
-		INDArray features = testData.getFeatures();
+		INDArray features = testData.getFeatures();		
 		for (int i = 0; i < features.rows(); i++) {
 			INDArray slice = features.slice(i);
 			Tweet t = new Tweet(slice.getInt(1), slice.getString(1));
