@@ -93,32 +93,33 @@ public class Vectorize {
 
 	public void prepareTrainData() {
 		System.out.println("+==========PREPARING TRAIN DATA==========+");
-		// csvReader("./datasets/train/data.csv");
-		// wordToVec("./datasets/train/words.txt");
-		// sentenceToVec("./datasets/train/word_vectors.txt");
-		csvWriter("./datasets/train/results.csv");
+		// csvReader("../datasets/train/data.csv");
+		// wordToVec("../datasets/train/words.txt");
+		// sentenceToVec("../datasets/train/word_vectors.txt");
+		csvWriter("../datasets/train/results.csv");
 		System.out.println("+==========DONE==========+");
 
 	}
 
 	public void prepareTestData() {
 		System.out.println("+==========PREPARING TEST DATA==========+");
-		// csvReader("./datasets/test/data.csv");
-		// wordToVec("./datasets/test/words.txt");
-		// sentenceToVec("./datasets/test/word_vectors.txt");
-		csvWriter("./datasets/test/results.csv");
+		// csvReader("../datasets/test/data.csv");
+		// wordToVec("../datasets/test/words.txt");
+		// sentenceToVec("../datasets/test/word_vectors.txt");
+		csvWriter("../datasets/test/results.csv");
 		System.out.println("+==========DONE==========+");
 	}
 
 	public void csvWriter(String csv_file_path) {
+		System.out.println("Writing Neural Network friendly code to results.csv ... ");
 		String sentenceFileToRead = "";
 		String csvFileToRead = "";
 		if (csv_file_path.contains("train")) {
-			sentenceFileToRead = "./datasets/train/sentence_vectors.txt";
-			csvFileToRead = "./datasets/train/data.csv";
+			sentenceFileToRead = "../datasets/train/sentence_vectors.txt";
+			csvFileToRead = "../datasets/train/data.csv";
 		} else {
-			sentenceFileToRead = "./datasets/test/sentence_vectors.txt";
-			csvFileToRead = "./datasets/test/data.csv";
+			sentenceFileToRead = "../datasets/test/sentence_vectors.txt";
+			csvFileToRead = "../datasets/test/data.csv";
 		}
 		try {
 			CSVWriter writer = new CSVWriter(new FileWriter(csv_file_path));
@@ -150,29 +151,14 @@ public class Vectorize {
 		}
 	}
 
-	public void prepareData(String file_path) {
-		try {
-			Reader reader = new BufferedReader(
-					new InputStreamReader(new FileInputStream("./datasets" + file_path), "utf-8"));
-			CSVReader csvReader = new CSVReader(reader);
-			String[] nextRecord;
-			while ((nextRecord = csvReader.readNext()) != null) {
-				String tweet = nextRecord[1].replaceAll("[^a-zA-Z0-9\\s]", "");
-				float[] tweetVector = sentenceToVector(tweet);
-				System.out.println(tweetVector.toString());
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
 	public void csvReader(String csv_file_path) {
 		try {
+			System.out.println("Reading data.csv file ... ");
 			String fileToWrite = "";
 			if (csv_file_path.contains("train")) {
-				fileToWrite = "./datasets/train/words.txt";
+				fileToWrite = "../datasets/train/words.txt";
 			} else {
-				fileToWrite = "./datasets/test/words.txt";
+				fileToWrite = "../datasets/test/words.txt";
 			}
 			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csv_file_path), "utf-8"));
 			CSVReader csvReader = new CSVReader(reader);
@@ -190,14 +176,15 @@ public class Vectorize {
 
 	public void sentenceToVec(String word_vector_file_path) {
 		try {
+			System.out.println("Vectorizing sentences using word to vec model ... ");
 			String fileToWrite = "";
 			String fileToRead = "";
 			if (word_vector_file_path.contains("train")) {
-				fileToWrite = "./datasets/train/sentence_vectors.txt";
-				fileToRead = "./datasets/train/words.txt";
+				fileToWrite = "../datasets/train/sentence_vectors.txt";
+				fileToRead = "../datasets/train/words.txt";
 			} else {
-				fileToWrite = "./datasets/test/sentence_vectors.txt";
-				fileToRead = "./datasets/test/words.txt";
+				fileToWrite = "../datasets/test/sentence_vectors.txt";
+				fileToRead = "../datasets/test/words.txt";
 			}
 			Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel(word_vector_file_path);
 			BufferedWriter writer = new BufferedWriter(new FileWriter(fileToWrite));
@@ -246,9 +233,9 @@ public class Vectorize {
 		try {
 			String fileToWrite = "";
 			if (word_file_path.contains("train")) {
-				fileToWrite = "./datasets/train/word_vectors.txt";
+				fileToWrite = "../datasets/train/word_vectors.txt";
 			} else {
-				fileToWrite = "./datasets/test/word_vectors.txt";
+				fileToWrite = "../datasets/test/word_vectors.txt";
 			}
 			SentenceIterator iter = new LineSentenceIterator(new File(word_file_path));
 
@@ -286,39 +273,6 @@ public class Vectorize {
 		}
 	}
 
-	public void updateArticleTitles() {
-
-		MongoClientURI uriVal = new MongoClientURI(
-				"mongodb+srv://gautam:projectHope@cluster0-biq2l.azure.mongodb.net/test?retryWrites=true&w=majority");
-		MongoClient mongoClient = new MongoClient(uriVal);
-		MongoDatabase mongoDB = mongoClient.getDatabase("RSS_Reader");
-		MongoCollection<Document> collection = mongoDB.getCollection("Article");
-		FindIterable<Document> findIterable = collection.find(new Document());
-		try {
-			BufferedWriter writer = new BufferedWriter(new FileWriter("./words.txt"));
-			for (Document d : findIterable) {
-				String title = d.getString("title");
-				writer.write(title + "\n");
-			}
-			writer.close();
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-	}
-
-	public static void clearFiles() {
-		try {
-			System.out.println("----CLEARING FILES----");
-			PrintWriter wordVecs = new PrintWriter("./wordVectors.txt");
-			PrintWriter sentenceVecs = new PrintWriter("./sentenceVectors.txt");
-			PrintWriter words = new PrintWriter("./words.txt");
-			wordVecs.close();
-			words.close();
-			sentenceVecs.close();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-	}
 
 	public List<Integer> getSentiments(String csv_file_path) {
 		try {
@@ -350,30 +304,6 @@ public class Vectorize {
 			e.printStackTrace();
 		}
 		return null; // return statement for compilation only
-	}
-
-	// DELETE THIS METHOD
-	public float[] sentenceToVector(String sentence) {
-		Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel("./wordVectors.txt");
-		ArrayList<String> words = new ArrayList<>();
-		String tweet = sentence.replaceAll("[^a-zA-Z0-9\\s]", "");
-		for (String word : tweet.split(" ")) {
-			// if length is not zero then word frequency is greater than 2
-			if (word2Vec.getWordVector(word) != null) {
-				words.add(word);
-			}
-		}
-		// if words.size equals 0. Then the tweet is made up of words that are all
-		// different
-		if (words.size() > 0) {
-			INDArray wordVectors = word2Vec.getWordVectorsMean(words);
-			words.clear();
-			float[] result = stringToFloatArray(wordVectors.toString());
-			return result;
-		} else {
-			return new float[] { 0 };
-		}
-
 	}
 
 }
