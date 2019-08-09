@@ -86,8 +86,9 @@ public class Vectorize {
 	public static void main(String args[]) {
 		Vectorize v = new Vectorize();
 		// clearFiles(); NEED TO WRITE
+		//v.prepareTestData();
 		v.prepareTrainData();
-		v.prepareTestData();
+
 	}
 
 	public void prepareTrainData() {
@@ -126,15 +127,15 @@ public class Vectorize {
 			List<Integer> sentiments = getSentiments(csvFileToRead);
 			File file = new File(sentenceFileToRead);
 			Scanner sc = new Scanner(file);
-			while (sc.hasNext()) {
+			while (sc.hasNext() && sentimentIndex < sentiments.size()) {
 				String s = sc.nextLine();
 				if (s.contains("NO SENTENCE VECTOR")) {
 					sentimentIndex++;
 					continue;
 				} else {
 					s = s.replaceAll("\\[|\\]", "");
-					String recordString = sentiments.get(sentimentIndex) + s;
-					System.out.println(recordString);
+					// add comma so that split occurs correctly
+					String recordString = sentiments.get(sentimentIndex) + "," + s;
 					sentimentIndex++;
 					String[] record = recordString.split(",");
 					writer.writeNext(record);
