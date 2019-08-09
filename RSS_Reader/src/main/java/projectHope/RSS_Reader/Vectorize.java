@@ -95,6 +95,7 @@ public class Vectorize {
 		// csvReader("./datasets/train/data.csv");
 		// wordToVec("./datasets/train/words.txt");
 		// sentenceToVec("./datasets/train/word_vectors.txt");
+		csvWriter("./datasets/train/results.csv");
 		System.out.println("+==========DONE==========+");
 
 	}
@@ -104,40 +105,8 @@ public class Vectorize {
 		// csvReader("./datasets/test/data.csv");
 		// wordToVec("./datasets/test/words.txt");
 		// sentenceToVec("./datasets/test/word_vectors.txt");
+		csvWriter("./datasets/test/results.csv");
 		System.out.println("+==========DONE==========+");
-	}
-
-	public List<Integer> getSentiments(String csv_file_path) {
-		try {
-			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csv_file_path), "utf-8"));
-			CSVReader csvReader = new CSVReader(reader);
-			String[] nextRecord;
-			List<Integer> sentiments = new ArrayList<>();
-			while ((nextRecord = csvReader.readNext()) != null) {
-				sentiments.add(Integer.parseInt(nextRecord[0]));
-			}
-			return sentiments;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null; // return statement for compilation only
-	}
-	
-	
-	public List<String> getTweets(String csv_file_path) {
-		try {
-			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csv_file_path), "utf-8"));
-			CSVReader csvReader = new CSVReader(reader);
-			String[] nextRecord;
-			List<String> tweets = new ArrayList<>();
-			while ((nextRecord = csvReader.readNext()) != null) {
-				tweets.add(nextRecord[1]);
-			}
-			return tweets;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null; // return statement for compilation only
 	}
 
 	public void csvWriter(String csv_file_path) {
@@ -153,14 +122,27 @@ public class Vectorize {
 		try {
 			CSVWriter writer = new CSVWriter(new FileWriter(csv_file_path));
 			// Create record
-			String recordString = "";
-
-			String[] record = "4,David,Miller,Australia,30".split(",");
-			// Write the record to file
-			writer.writeNext(record);
-
+			int sentimentIndex = 0;
+			List<Integer> sentiments = getSentiments(csvFileToRead);
+			File file = new File(sentenceFileToRead);
+			Scanner sc = new Scanner(file);
+			while (sc.hasNext()) {
+				String s = sc.nextLine();
+				if (s.contains("NO SENTENCE VECTOR")) {
+					sentimentIndex++;
+					continue;
+				} else {
+					s = s.replaceAll("\\[|\\]", "");
+					String recordString = sentiments.get(sentimentIndex) + s;
+					System.out.println(recordString);
+					sentimentIndex++;
+					String[] record = recordString.split(",");
+					writer.writeNext(record);
+				}
+			}
 			// close the writer
 			writer.close();
+			sc.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 
@@ -335,6 +317,38 @@ public class Vectorize {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public List<Integer> getSentiments(String csv_file_path) {
+		try {
+			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csv_file_path), "utf-8"));
+			CSVReader csvReader = new CSVReader(reader);
+			String[] nextRecord;
+			List<Integer> sentiments = new ArrayList<>();
+			while ((nextRecord = csvReader.readNext()) != null) {
+				sentiments.add(Integer.parseInt(nextRecord[0]));
+			}
+			return sentiments;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null; // return statement for compilation only
+	}
+
+	public List<String> getTweets(String csv_file_path) {
+		try {
+			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csv_file_path), "utf-8"));
+			CSVReader csvReader = new CSVReader(reader);
+			String[] nextRecord;
+			List<String> tweets = new ArrayList<>();
+			while ((nextRecord = csvReader.readNext()) != null) {
+				tweets.add(nextRecord[1]);
+			}
+			return tweets;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null; // return statement for compilation only
 	}
 
 	// DELETE THIS METHOD
