@@ -35,6 +35,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
 import au.com.bytecode.opencsv.CSVReader;
+import au.com.bytecode.opencsv.CSVWriter;
 
 import org.datavec.api.util.ClassPathResource;
 
@@ -91,24 +92,79 @@ public class Vectorize {
 
 	public void prepareTrainData() {
 		System.out.println("+==========PREPARING TRAIN DATA==========+");
-		//csvReader("./datasets/train/data.csv");
-		//wordToVec("./datasets/train/words.txt");
-		sentenceToVec("./datasets/train/word_vectors.txt");
+		// csvReader("./datasets/train/data.csv");
+		// wordToVec("./datasets/train/words.txt");
+		// sentenceToVec("./datasets/train/word_vectors.txt");
 		System.out.println("+==========DONE==========+");
 
-		
 	}
-	
+
 	public void prepareTestData() {
 		System.out.println("+==========PREPARING TEST DATA==========+");
-		//csvReader("./datasets/test/data.csv");
-		//wordToVec("./datasets/test/words.txt");
-		sentenceToVec("./datasets/test/word_vectors.txt");
+		// csvReader("./datasets/test/data.csv");
+		// wordToVec("./datasets/test/words.txt");
+		// sentenceToVec("./datasets/test/word_vectors.txt");
 		System.out.println("+==========DONE==========+");
 	}
+
+	public List<Integer> getSentiments(String csv_file_path) {
+		try {
+			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csv_file_path), "utf-8"));
+			CSVReader csvReader = new CSVReader(reader);
+			String[] nextRecord;
+			List<Integer> sentiments = new ArrayList<>();
+			while ((nextRecord = csvReader.readNext()) != null) {
+				sentiments.add(Integer.parseInt(nextRecord[0]));
+			}
+			return sentiments;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null; // return statement for compilation only
+	}
 	
-	public void csvWriter(String file_path) {
-		
+	
+	public List<String> getTweets(String csv_file_path) {
+		try {
+			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csv_file_path), "utf-8"));
+			CSVReader csvReader = new CSVReader(reader);
+			String[] nextRecord;
+			List<String> tweets = new ArrayList<>();
+			while ((nextRecord = csvReader.readNext()) != null) {
+				tweets.add(nextRecord[1]);
+			}
+			return tweets;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null; // return statement for compilation only
+	}
+
+	public void csvWriter(String csv_file_path) {
+		String sentenceFileToRead = "";
+		String csvFileToRead = "";
+		if (csv_file_path.contains("train")) {
+			sentenceFileToRead = "./datasets/train/sentence_vectors.txt";
+			csvFileToRead = "./datasets/train/data.csv";
+		} else {
+			sentenceFileToRead = "./datasets/test/sentence_vectors.txt";
+			csvFileToRead = "./datasets/test/data.csv";
+		}
+		try {
+			CSVWriter writer = new CSVWriter(new FileWriter(csv_file_path));
+			// Create record
+			String recordString = "";
+
+			String[] record = "4,David,Miller,Australia,30".split(",");
+			// Write the record to file
+			writer.writeNext(record);
+
+			// close the writer
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+
+		}
 	}
 
 	public void prepareData(String file_path) {
@@ -127,15 +183,15 @@ public class Vectorize {
 		}
 	}
 
-	public void csvReader(String file_path) {
+	public void csvReader(String csv_file_path) {
 		try {
 			String fileToWrite = "";
-			if (file_path.contains("train")) {
+			if (csv_file_path.contains("train")) {
 				fileToWrite = "./datasets/train/words.txt";
 			} else {
 				fileToWrite = "./datasets/test/words.txt";
 			}
-			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file_path), "utf-8"));
+			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csv_file_path), "utf-8"));
 			CSVReader csvReader = new CSVReader(reader);
 			String[] nextRecord;
 			BufferedWriter writer = new BufferedWriter(new FileWriter(fileToWrite));
@@ -203,15 +259,15 @@ public class Vectorize {
 		return floatArray;
 	}
 
-	public void wordToVec(String file_path) {
+	public void wordToVec(String word_file_path) {
 		try {
 			String fileToWrite = "";
-			if (file_path.contains("train")) {
+			if (word_file_path.contains("train")) {
 				fileToWrite = "./datasets/train/word_vectors.txt";
 			} else {
 				fileToWrite = "./datasets/test/word_vectors.txt";
 			}
-			SentenceIterator iter = new LineSentenceIterator(new File(file_path));
+			SentenceIterator iter = new LineSentenceIterator(new File(word_file_path));
 
 			log.info("Load & Vectorize titles into words....");
 			// Strip white space before and after for each line &
@@ -280,7 +336,7 @@ public class Vectorize {
 			e.printStackTrace();
 		}
 	}
-	
+
 	// DELETE THIS METHOD
 	public float[] sentenceToVector(String sentence) {
 		Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel("./wordVectors.txt");
@@ -304,6 +360,5 @@ public class Vectorize {
 		}
 
 	}
-
 
 }
