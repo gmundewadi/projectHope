@@ -61,7 +61,7 @@ public class RSSReader {
 		try {
 			MongoDatabase database = mongoClient.getDatabase("RSS_Reader");
 			MongoCollection<Document> collection = database.getCollection("Article");
-			File file = new File("rssFeeds.txt");
+			File file = new File("./datasets/RSS_feeds.txt");
 			Scanner sc = new Scanner(file);
 			while (sc.hasNextLine()) {
 				String url = sc.nextLine();

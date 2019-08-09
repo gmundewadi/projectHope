@@ -2,10 +2,14 @@ package com.ProjectHope.spring.mongo.api;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
+import org.apache.commons.io.IOUtils;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
@@ -26,6 +30,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 public class TweetClassifier {
@@ -37,29 +42,37 @@ public class TweetClassifier {
 		classifiers.put(0, "negative");
 		classifiers.put(4, "positive");
 	}
+	
+		
 
 	public void classify(String twitterDataTrainFile, String twitterDataTestFile)
 			throws FileNotFoundException, IOException, InterruptedException {
-
 
 		
 		int labelIndex = 0;
 		int numClasses = 2;
 
 		int batchSizeTraining = 100;
-		// ERROR ON LINE 50. Number format exception.
+			
+		
+		System.out.println("----Loading training data---");
+		
+	
+		// ERROR ON LINE 51. Number format exception.
 		DataSet trainingData = readCSVDataset(twitterDataTrainFile, batchSizeTraining, labelIndex, numClasses); 
-
-
+		
+		
 		// shuffle our training data to avoid any impact of ordering
 		trainingData.shuffle();
 
 		
 		int batchSizeTest = 5;
+		System.out.println("----Loading test data---");
 		DataSet testData = readCSVDataset(twitterDataTestFile, batchSizeTest, labelIndex, numClasses);
 
 
-		Map<Integer, Tweet> tweets = objectify(testData);
+		Map<Integer, Tweet> tweets = objectify(trainingData);
+		
 		tweets.forEach((k, v) -> System.out.println("Index:" + k + " -> " + v));
 
 		// Neural nets all about numbers. Lets normalize our data
@@ -74,7 +87,7 @@ public class TweetClassifier {
 		// Apply normalization to the test data.
 		normalizer.transform(testData);
 
-		int numInputs = 4;
+		int numInputs = 2;
 		int outputNum = 3;
 		int iterations = 3000;
 		long seed = 123;
@@ -117,40 +130,44 @@ public class TweetClassifier {
 		tweets.forEach((k, v) -> System.out.println("Index:" + k + " -> " + v));
 
 	}
+	
 
+    public List<Tweet> objectifyCSV(String csvFileClasspath) {
+        try{
+            List<String> lines = IOUtils.readLines(new ClassPathResource(csvFileClasspath).getInputStream(), StandardCharsets.UTF_8);
+            List<Tweet> result = new ArrayList<>();
+            for(String line:lines){
+                String[] parts = line.split(",");                                
+                Tweet t = new Tweet(Integer.parseInt(parts[0]),parts[1]);         
+                result.add(t);
+            }
+            return result;
+        } catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
 	public DataSet readCSVDataset(String csvFileClasspath, int batchSize, int labelIndex, int numClasses)
 			throws IOException, InterruptedException {
-
+		
 		RecordReader rr = new CSVRecordReader();
 		rr.initialize(new FileSplit(new ClassPathResource(csvFileClasspath).getFile()));
 		DataSetIterator iterator = new RecordReaderDataSetIterator(rr, batchSize, labelIndex, numClasses);
-		System.out.println(iterator.toString());
 		return iterator.next();
 	}
 
-	private Map<Integer, Tweet> objectify(DataSet testData) {
+	public Map<Integer, Tweet> objectify(DataSet testData) {
 		Map<Integer, Tweet> iTweets = new HashMap<>();
 		INDArray features = testData.getFeatures();		
 		for (int i = 0; i < features.rows(); i++) {
 			INDArray slice = features.slice(i);
-			float[] tweetArr = stringToFloatArray(slice.getString(1));
-			Tweet t = new Tweet(slice.getInt(1), tweetArr);
+			Tweet t = new Tweet(slice.getInt(0), slice.getString(1));
 			iTweets.put(i, t);
 		}
 		return iTweets;
 	}
 	
-	private float[] stringToFloatArray(String value) {
-		value = value.replaceAll("[-+.^:,]", "");
-		String[] stringFloats = value.split(" ");
-		float[] floatArray = new float[stringFloats.length];
-
-		for (int i = 0; i < stringFloats.length; i++) {
-			float f = Float.parseFloat(stringFloats[i]);
-			floatArray[i] = f;
-		}
-		return floatArray;
-	}
 
 	private void classify(INDArray output, Map<Integer, Tweet> flowers) {
 		for (int i = 0; i < output.rows(); i++) {

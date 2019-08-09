@@ -84,30 +84,165 @@ public class Vectorize {
 
 	public static void main(String args[]) {
 		Vectorize v = new Vectorize();
-		v.clearFiles();
-		System.out.println("----------------FILES CLEARED----------------");
-		v.csvReader();
-		System.out.println("----------------WORDS.TXT UPDATED----------------");
-		v.wordToVec();
-		System.out.println("----------------WORD VECTORS UPDATED----------------");
-		v.sentenceToVec();
-		System.out.println("----------------SENTENCE VECTORS UPDATED----------------");
-		System.out.println("----------------VECTORIZATION COMPLETE----------------");
+		// clearFiles(); NEED TO WRITE
+		v.prepareTrainData();
+		v.prepareTestData();
 	}
 
-	public void csvReader() {
+	public void prepareTrainData() {
+		System.out.println("+==========PREPARING TRAIN DATA==========+");
+		//csvReader("./datasets/train/data.csv");
+		//wordToVec("./datasets/train/words.txt");
+		sentenceToVec("./datasets/train/word_vectors.txt");
+		System.out.println("+==========DONE==========+");
+
+		
+	}
+	
+	public void prepareTestData() {
+		System.out.println("+==========PREPARING TEST DATA==========+");
+		//csvReader("./datasets/test/data.csv");
+		//wordToVec("./datasets/test/words.txt");
+		sentenceToVec("./datasets/test/word_vectors.txt");
+		System.out.println("+==========DONE==========+");
+	}
+	
+	public void csvWriter(String file_path) {
+		
+	}
+
+	public void prepareData(String file_path) {
 		try {
 			Reader reader = new BufferedReader(
-					new InputStreamReader(new FileInputStream("./test-twitter.csv"), "utf-8"));
+					new InputStreamReader(new FileInputStream("./datasets" + file_path), "utf-8"));
 			CSVReader csvReader = new CSVReader(reader);
 			String[] nextRecord;
-			BufferedWriter writer = new BufferedWriter(new FileWriter("./words.txt"));
+			while ((nextRecord = csvReader.readNext()) != null) {
+				String tweet = nextRecord[1].replaceAll("[^a-zA-Z0-9\\s]", "");
+				float[] tweetVector = sentenceToVector(tweet);
+				System.out.println(tweetVector.toString());
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void csvReader(String file_path) {
+		try {
+			String fileToWrite = "";
+			if (file_path.contains("train")) {
+				fileToWrite = "./datasets/train/words.txt";
+			} else {
+				fileToWrite = "./datasets/test/words.txt";
+			}
+			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file_path), "utf-8"));
+			CSVReader csvReader = new CSVReader(reader);
+			String[] nextRecord;
+			BufferedWriter writer = new BufferedWriter(new FileWriter(fileToWrite));
 			while ((nextRecord = csvReader.readNext()) != null) {
 				String tweet = nextRecord[1].replaceAll("[^a-zA-Z0-9\\s]", "");
 				writer.write(tweet + "\n");
 			}
 			writer.close();
 		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void sentenceToVec(String word_vector_file_path) {
+		try {
+			String fileToWrite = "";
+			String fileToRead = "";
+			if (word_vector_file_path.contains("train")) {
+				fileToWrite = "./datasets/train/sentence_vectors.txt";
+				fileToRead = "./datasets/train/words.txt";
+			} else {
+				fileToWrite = "./datasets/test/sentence_vectors.txt";
+				fileToRead = "./datasets/test/words.txt";
+			}
+			Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel(word_vector_file_path);
+			BufferedWriter writer = new BufferedWriter(new FileWriter(fileToWrite));
+			File file = new File(fileToRead);
+			Scanner sc = new Scanner(file);
+			ArrayList<String> words = new ArrayList<>();
+			while (sc.hasNextLine()) {
+				String tweet = sc.nextLine().replaceAll("[^a-zA-Z0-9\\s]", "");
+				for (String word : tweet.split(" ")) {
+					// if length is not zero then word frequency is greater than 2
+					if (word2Vec.getWordVector(word) != null) {
+						words.add(word);
+					}
+				}
+				// if words.size equals 0. Then the tweet is made up of words that are all
+				// different
+				if (words.size() > 0) {
+					INDArray wordVectors = word2Vec.getWordVectorsMean(words);
+					words.clear();
+					String result = wordVectors.toString();
+					writer.write(result + "\n");
+				} else {
+					writer.write("NO SENTENCE VECTOR" + "\n");
+				}
+			}
+			sc.close();
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	private float[] stringToFloatArray(String value) {
+		value = value.replaceAll("[-+.^:,]", "");
+		String[] stringFloats = value.split(" ");
+		float[] floatArray = new float[stringFloats.length];
+		for (int i = 0; i < stringFloats.length; i++) {
+			float f = Float.parseFloat(stringFloats[i]);
+			floatArray[i] = f;
+		}
+		return floatArray;
+	}
+
+	public void wordToVec(String file_path) {
+		try {
+			String fileToWrite = "";
+			if (file_path.contains("train")) {
+				fileToWrite = "./datasets/train/word_vectors.txt";
+			} else {
+				fileToWrite = "./datasets/test/word_vectors.txt";
+			}
+			SentenceIterator iter = new LineSentenceIterator(new File(file_path));
+
+			log.info("Load & Vectorize titles into words....");
+			// Strip white space before and after for each line &
+			// Split on white spaces in the line to get words
+			TokenizerFactory t = new DefaultTokenizerFactory();
+
+			/*
+			 * CommonPreprocessor will apply the following regex to each token:
+			 * [\d\.:,"'\(\)\[\]|/?!;]+ So, effectively all numbers, punctuation symbols and
+			 * some special symbols are stripped off. Additionally it forces lower case for
+			 * all tokens.
+			 */
+
+			t.setTokenPreProcessor(new CommonPreprocessor());
+
+			log.info("Building model....");
+			Word2Vec vec = new Word2Vec.Builder().minWordFrequency(2).iterations(1).layerSize(100).seed(42)
+					.windowSize(5).iterate(iter).tokenizerFactory(t).build();
+
+			log.info("Fitting Word2Vec model....");
+			vec.fit();
+
+			log.info("Writing word vectors to text file....");
+			WordVectorSerializer.writeWordVectors(vec, fileToWrite);
+
+			// How to retrive Word2Vec
+			// Word2Vec word2Vec =
+			// WordVectorSerializer.readWord2VecModel("WORDVECS_FILE_PATH");
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -132,43 +267,9 @@ public class Vectorize {
 		}
 	}
 
-	public void sentenceToVec() {
+	public static void clearFiles() {
 		try {
-			Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel("./wordVectors.txt");
-			BufferedWriter writer = new BufferedWriter(new FileWriter("./sentenceVectors.txt"));
-			File file = new File("words.txt");
-			Scanner sc = new Scanner(file);
-			ArrayList<String> words = new ArrayList<>();
-			while (sc.hasNextLine()) {
-				String tweet = sc.nextLine().replaceAll("[^a-zA-Z0-9\\s]", "");
-				for (String word : tweet.split(" ")) {
-					// if length is not zero then word frequency is greater than 2
-					if (word2Vec.getWordVector(word) != null) {
-						words.add(word);
-					}
-				}
-				// if words.size equals 0. Then the tweet is made up of words that are all different
-				if (words.size() > 0) {
-					INDArray wordVectors = word2Vec.getWordVectorsMean(words);
-					words.clear();
-					String result = wordVectors.toString();
-					writer.write(result + "\n");
-				}
-				else {
-					writer.write("NO SENTENCE VECTOR" + "\n");
-				}
-			}
-			sc.close();
-			writer.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-	}
-
-	
-	public void clearFiles() {
-		try {
+			System.out.println("----CLEARING FILES----");
 			PrintWriter wordVecs = new PrintWriter("./wordVectors.txt");
 			PrintWriter sentenceVecs = new PrintWriter("./sentenceVectors.txt");
 			PrintWriter words = new PrintWriter("./words.txt");
@@ -179,42 +280,30 @@ public class Vectorize {
 			e.printStackTrace();
 		}
 	}
-
-	public void wordToVec() {
-		try {
-			SentenceIterator iter = new LineSentenceIterator(new File("./words.txt"));
-
-			log.info("Load & Vectorize titles into words....");
-			// Strip white space before and after for each line &
-			// Split on white spaces in the line to get words
-			TokenizerFactory t = new DefaultTokenizerFactory();
-
-			/*
-			 * CommonPreprocessor will apply the following regex to each token:
-			 * [\d\.:,"'\(\)\[\]|/?!;]+ So, effectively all numbers, punctuation symbols and
-			 * some special symbols are stripped off. Additionally it forces lower case for
-			 * all tokens.
-			 */
-
-			t.setTokenPreProcessor(new CommonPreprocessor());
-
-			log.info("Building model....");
-			Word2Vec vec = new Word2Vec.Builder().minWordFrequency(2).iterations(1).layerSize(100).seed(42)
-					.windowSize(5).iterate(iter).tokenizerFactory(t).build();
-
-			log.info("Fitting Word2Vec model....");
-			vec.fit();
-
-			log.info("Writing word vectors to text file....");
-			WordVectorSerializer.writeWordVectors(vec, "./wordVectors.txt");
-
-			// How to retrive Word2Vec
-			// Word2Vec word2Vec =
-			// WordVectorSerializer.readWord2VecModel("WORDVECS_FILE_PATH");
-
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+	
+	// DELETE THIS METHOD
+	public float[] sentenceToVector(String sentence) {
+		Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel("./wordVectors.txt");
+		ArrayList<String> words = new ArrayList<>();
+		String tweet = sentence.replaceAll("[^a-zA-Z0-9\\s]", "");
+		for (String word : tweet.split(" ")) {
+			// if length is not zero then word frequency is greater than 2
+			if (word2Vec.getWordVector(word) != null) {
+				words.add(word);
+			}
 		}
+		// if words.size equals 0. Then the tweet is made up of words that are all
+		// different
+		if (words.size() > 0) {
+			INDArray wordVectors = word2Vec.getWordVectorsMean(words);
+			words.clear();
+			float[] result = stringToFloatArray(wordVectors.toString());
+			return result;
+		} else {
+			return new float[] { 0 };
+		}
+
 	}
+
+
 }
