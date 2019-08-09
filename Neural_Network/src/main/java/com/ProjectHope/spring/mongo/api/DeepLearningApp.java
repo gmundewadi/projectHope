@@ -15,6 +15,6 @@ public class DeepLearningApp implements ApplicationRunner {
 	@Override
 	public void run(ApplicationArguments arg0) throws Exception {
 		TweetClassifier classifier = new TweetClassifier();
-		classifier.classify("./train-twitter.csv","./test-twitter.csv");
+		classifier.classify("./datasets/train/results.csv", "./datasets/test/results.csv");
 	}
 }

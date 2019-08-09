@@ -7,31 +7,30 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class Tweet {
 
 	private int sentiment; // 0 is negative. 4 is positive
-	private String tweet; // sentence to vector representation of tweet
+	private float[] tweetVector; // sentence to vector representation of tweet
 
-	private String tweetClass;
-
+	private String tweetClass;	
 	
-	public Tweet(int sentiment, String tweetArr) {
+	public Tweet(int sentiment, float[] tweetVector) {
 		super();
 		this.sentiment = sentiment;
-		this.tweet = tweetArr;
+		this.tweetVector = tweetVector;
 	}
 
 	public int getSentiment() {
 		return sentiment;
 	}
 
-	public void String(int sentiment) {
+	public void setSentiment(int sentiment) {
 		this.sentiment = sentiment;
 	}
 
-	public String getTweet() {
-		return tweet;
+	public float[] getTweetVector() {
+		return tweetVector;
 	}
 
-	public void setTweet(String tweet) {
-		this.tweet = tweet;
+	public void setTweetVector(float[] tweetVector) {
+		this.tweetVector = tweetVector;
 	}
 
 	public String getTweetClass() {
@@ -44,6 +43,8 @@ public class Tweet {
 
 	@Override
 	public String toString() {
-		return "Tweet [sentiment=" + sentiment + ", tweetArray=" + tweet.toString();
+		return "Tweet [sentiment=" + sentiment + ", tweetVector=" + Arrays.toString(tweetVector) + "]";
 	}
+
+	
 }

@@ -85,33 +85,33 @@ public class Vectorize {
 
 	public static void main(String args[]) {
 		Vectorize v = new Vectorize();
-		// clearFiles(); NEED TO WRITE
-		//v.prepareTestData();
+		clearFiles();
+		v.prepareTestData();
 		v.prepareTrainData();
 
 	}
 
 	public void prepareTrainData() {
 		System.out.println("+==========PREPARING TRAIN DATA==========+");
-		// csvReader("../datasets/train/data.csv");
-		// wordToVec("../datasets/train/words.txt");
-		// sentenceToVec("../datasets/train/word_vectors.txt");
+		csvReader("../datasets/train/data.csv");
+		wordToVec("../datasets/train/words.txt");
+		sentenceToVec("../datasets/train/word_vectors.txt");
 		csvWriter("../datasets/train/results.csv");
-		System.out.println("+==========DONE==========+");
+		System.out.println("+==========TRAIN/results.csv prepared==========+");
 
 	}
 
 	public void prepareTestData() {
 		System.out.println("+==========PREPARING TEST DATA==========+");
-		// csvReader("../datasets/test/data.csv");
-		// wordToVec("../datasets/test/words.txt");
-		// sentenceToVec("../datasets/test/word_vectors.txt");
+		csvReader("../datasets/test/data.csv");
+		wordToVec("../datasets/test/words.txt");
+		sentenceToVec("../datasets/test/word_vectors.txt");
 		csvWriter("../datasets/test/results.csv");
-		System.out.println("+==========DONE==========+");
+		System.out.println("+==========TEST/results.csv prepared==========+");
 	}
 
 	public void csvWriter(String csv_file_path) {
-		System.out.println("Writing Neural Network friendly code to results.csv ... ");
+		System.out.println("Writing Neural Network friendly code to " + csv_file_path + "/results.csv ...");
 		String sentenceFileToRead = "";
 		String csvFileToRead = "";
 		if (csv_file_path.contains("train")) {
@@ -153,7 +153,7 @@ public class Vectorize {
 
 	public void csvReader(String csv_file_path) {
 		try {
-			System.out.println("Reading data.csv file ... ");
+			System.out.println("Reading data.csv file from " + csv_file_path + " ... ");
 			String fileToWrite = "";
 			if (csv_file_path.contains("train")) {
 				fileToWrite = "../datasets/train/words.txt";
@@ -176,7 +176,7 @@ public class Vectorize {
 
 	public void sentenceToVec(String word_vector_file_path) {
 		try {
-			System.out.println("Vectorizing sentences using word to vec model ... ");
+			System.out.println("Vectorizing sentences using" + word_vector_file_path + " word2vec model ... ");
 			String fileToWrite = "";
 			String fileToRead = "";
 			if (word_vector_file_path.contains("train")) {
@@ -218,19 +218,9 @@ public class Vectorize {
 
 	}
 
-	private float[] stringToFloatArray(String value) {
-		value = value.replaceAll("[-+.^:,]", "");
-		String[] stringFloats = value.split(" ");
-		float[] floatArray = new float[stringFloats.length];
-		for (int i = 0; i < stringFloats.length; i++) {
-			float f = Float.parseFloat(stringFloats[i]);
-			floatArray[i] = f;
-		}
-		return floatArray;
-	}
-
 	public void wordToVec(String word_file_path) {
 		try {
+			System.out.println("Building word to vector model to " + word_file_path + " ... ");
 			String fileToWrite = "";
 			if (word_file_path.contains("train")) {
 				fileToWrite = "../datasets/train/word_vectors.txt";
@@ -268,14 +258,13 @@ public class Vectorize {
 			// WordVectorSerializer.readWord2VecModel("WORDVECS_FILE_PATH");
 
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
-
 	public List<Integer> getSentiments(String csv_file_path) {
 		try {
+			System.out.println("Getting sentiment labels from " + csv_file_path + " ...");
 			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csv_file_path), "utf-8"));
 			CSVReader csvReader = new CSVReader(reader);
 			String[] nextRecord;
@@ -292,6 +281,7 @@ public class Vectorize {
 
 	public List<String> getTweets(String csv_file_path) {
 		try {
+			System.out.println("Getting tweet labels from " + csv_file_path + " ...");
 			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csv_file_path), "utf-8"));
 			CSVReader csvReader = new CSVReader(reader);
 			String[] nextRecord;
@@ -304,6 +294,28 @@ public class Vectorize {
 			e.printStackTrace();
 		}
 		return null; // return statement for compilation only
+	}
+
+	public static void clearFiles() {
+		try {
+			System.out.println("Clearing /datasets/train words.txt, word_vectors.txt, and sentence_vectors.txt ... ");
+			PrintWriter train_words = new PrintWriter("../datasets/train/words.txt");
+			PrintWriter train_word_vectors = new PrintWriter("../datasets/train/word_vectors.txt");
+			PrintWriter train_sentence_vectors = new PrintWriter("../datasets/train/sentence_vectors.txt");
+			train_words.close();
+			train_word_vectors.close();
+			train_sentence_vectors.close();
+
+			System.out.println("Clearing /datasets/test words.txt, word_vectors.txt, and sentence_vectors.txt ... ");
+			PrintWriter test_words = new PrintWriter("../datasets/test/words.txt");
+			PrintWriter test_word_vectors = new PrintWriter("../datasets/test/word_vectors.txt");
+			PrintWriter test_sentence_vectors = new PrintWriter("../datasets/test/sentence_vectors.txt");
+			test_words.close();
+			test_word_vectors.close();
+			test_sentence_vectors.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 	}
 
 }

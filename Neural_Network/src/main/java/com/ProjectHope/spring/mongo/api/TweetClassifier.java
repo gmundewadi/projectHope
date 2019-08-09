@@ -1,4 +1,5 @@
 package com.ProjectHope.spring.mongo.api;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -42,37 +43,28 @@ public class TweetClassifier {
 		classifiers.put(0, "negative");
 		classifiers.put(4, "positive");
 	}
-	
-		
 
 	public void classify(String twitterDataTrainFile, String twitterDataTestFile)
 			throws FileNotFoundException, IOException, InterruptedException {
 
-		
 		int labelIndex = 0;
 		int numClasses = 2;
 
 		int batchSizeTraining = 100;
-			
-		
+
 		System.out.println("----Loading training data---");
-		
-	
-		// ERROR ON LINE 51. Number format exception.
-		DataSet trainingData = readCSVDataset(twitterDataTrainFile, batchSizeTraining, labelIndex, numClasses); 
-		
-		
+
+		DataSet trainingData = readCSVDataset(twitterDataTrainFile, batchSizeTraining, labelIndex, numClasses);
+
 		// shuffle our training data to avoid any impact of ordering
 		trainingData.shuffle();
 
-		
 		int batchSizeTest = 5;
 		System.out.println("----Loading test data---");
 		DataSet testData = readCSVDataset(twitterDataTestFile, batchSizeTest, labelIndex, numClasses);
 
-
 		Map<Integer, Tweet> tweets = objectify(trainingData);
-		
+
 		tweets.forEach((k, v) -> System.out.println("Index:" + k + " -> " + v));
 
 		// Neural nets all about numbers. Lets normalize our data
@@ -87,70 +79,47 @@ public class TweetClassifier {
 		// Apply normalization to the test data.
 		normalizer.transform(testData);
 
-		int numInputs = 2;
-		int outputNum = 3;
+		int numInputs = 100;
+		int outputNum = 1;
 		int iterations = 3000;
 		long seed = 123;
 
 		System.out.println("Building model....");
-		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-				.seed(seed)
-				.activation(Activation.TANH)
-				.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-				.weightInit(WeightInit.XAVIER)
-				.l2Bias(1e-4)
-				.list()
-				.layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(3).build())
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.TANH)
+				.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).weightInit(WeightInit.XAVIER)
+				.l2Bias(1e-4).list().layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(3).build())
 				.layer(1, new DenseLayer.Builder().nIn(3).nOut(3).build())
-				.layer(2,
-						new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-								.activation(Activation.SOFTMAX).nIn(3).nOut(outputNum).build())
+				.layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+						.activation(Activation.SOFTMAX).nIn(3).nOut(outputNum).build())
 				.build();
 
 		MultiLayerNetwork model = new MultiLayerNetwork(conf);
 		model.init();
 		model.setListeners(new ScoreIterationListener(100));
 
-		for(int i = 0; i<iterations;i++) {
+		for (int i = 0; i < iterations; i++) {
 			model.fit(trainingData);
 		}
 
 		// evaluate the model on the test set
 		Evaluation eval = new Evaluation(3);
 		INDArray output = model.output(testData.getFeatures());
-		
+
 		eval.eval(testData.getLabels(), output);
-		
+
 		System.out.println(eval.stats());
-		
+
 		System.out.println(output);
-		
-		classify(output,tweets);
-		
+
+		classify(output, tweets);
+
 		tweets.forEach((k, v) -> System.out.println("Index:" + k + " -> " + v));
 
 	}
-	
 
-    public List<Tweet> objectifyCSV(String csvFileClasspath) {
-        try{
-            List<String> lines = IOUtils.readLines(new ClassPathResource(csvFileClasspath).getInputStream(), StandardCharsets.UTF_8);
-            List<Tweet> result = new ArrayList<>();
-            for(String line:lines){
-                String[] parts = line.split(",");                                
-                Tweet t = new Tweet(Integer.parseInt(parts[0]),parts[1]);         
-                result.add(t);
-            }
-            return result;
-        } catch (Exception e){
-            e.printStackTrace();
-            return null;
-        }
-    }
-    
 	public DataSet readCSVDataset(String csvFileClasspath, int batchSize, int labelIndex, int numClasses)
 			throws IOException, InterruptedException {
-		
+
 		RecordReader rr = new CSVRecordReader();
 		rr.initialize(new FileSplit(new ClassPathResource(csvFileClasspath).getFile()));
 		DataSetIterator iterator = new RecordReaderDataSetIterator(rr, batchSize, labelIndex, numClasses);
@@ -159,15 +128,15 @@ public class TweetClassifier {
 
 	public Map<Integer, Tweet> objectify(DataSet testData) {
 		Map<Integer, Tweet> iTweets = new HashMap<>();
-		INDArray features = testData.getFeatures();		
+		INDArray features = testData.getFeatures();
 		for (int i = 0; i < features.rows(); i++) {
 			INDArray slice = features.slice(i);
-			Tweet t = new Tweet(slice.getInt(0), slice.getString(1));
+			float[] tweetArray = getFloatArrayFromSlice(slice);
+			Tweet t = new Tweet(slice.getInt(0), tweetArray);
 			iTweets.put(i, t);
 		}
 		return iTweets;
 	}
-	
 
 	private void classify(INDArray output, Map<Integer, Tweet> flowers) {
 		for (int i = 0; i < output.rows(); i++) {
@@ -180,7 +149,7 @@ public class TweetClassifier {
 	private float[] getFloatArrayFromSlice(INDArray rowSlice) {
 		float[] result = new float[rowSlice.columns()];
 		for (int i = 0; i < rowSlice.columns(); i++) {
-			result[i] = rowSlice.getFloat(i);
+			result[i] = rowSlice.getFloat(i + 1);
 		}
 		return result;
 	}
