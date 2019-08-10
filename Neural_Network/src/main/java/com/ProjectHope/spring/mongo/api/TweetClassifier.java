@@ -51,7 +51,7 @@ public class TweetClassifier {
 		int labelIndex = 0;
 		int numClasses = 2;
 
-		int batchSizeTraining = 100;
+		int batchSizeTraining = 100000;
 
 		System.out.println("----Loading training data---");
 
@@ -65,8 +65,6 @@ public class TweetClassifier {
 		DataSet testData = readCSVDataset(twitterDataTestFile, batchSizeTest, labelIndex, numClasses);
 
 		Map<Integer, Tweet> tweets = objectify(trainingData);
-
-		tweets.forEach((k, v) -> System.out.println("Index:" + k + " -> " + v));
 
 		// Neural nets all about numbers. Lets normalize our data
 		DataNormalization normalizer = new NormalizerStandardize();
@@ -82,7 +80,7 @@ public class TweetClassifier {
 
 		int numInputs = 100;
 		int outputNum = 2;
-		int iterations = 3000;
+		int iterations = 1000;
 		long seed = 123;
 
 		System.out.println("Building model....");
@@ -114,8 +112,6 @@ public class TweetClassifier {
 
 		classify(output, tweets);
 
-		tweets.forEach((k, v) -> System.out.println("Index:" + k + " -> " + v));
-
 	}
 
 	public DataSet readCSVDataset(String csvFileClasspath, int batchSize, int labelIndex, int numClasses)
@@ -124,7 +120,6 @@ public class TweetClassifier {
 		RecordReader rr = new CSVRecordReader();
 		rr.initialize(new FileSplit(new ClassPathResource(csvFileClasspath).getFile()));
 		DataSetIterator iterator = new RecordReaderDataSetIterator(rr, batchSize, labelIndex, numClasses);
-		System.out.println("HERE");
 		return iterator.next();
 	}
 
