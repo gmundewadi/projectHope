@@ -41,7 +41,8 @@ public class TweetClassifier {
 	public TweetClassifier() {
 		classifiers = new HashMap<>();
 		classifiers.put(0, "negative");
-		classifiers.put(4, "positive");
+		classifiers.put(1, "positive");
+
 	}
 
 	public void classify(String twitterDataTrainFile, String twitterDataTestFile)
@@ -80,7 +81,7 @@ public class TweetClassifier {
 		normalizer.transform(testData);
 
 		int numInputs = 100;
-		int outputNum = 1;
+		int outputNum = 2;
 		int iterations = 3000;
 		long seed = 123;
 
@@ -123,6 +124,7 @@ public class TweetClassifier {
 		RecordReader rr = new CSVRecordReader();
 		rr.initialize(new FileSplit(new ClassPathResource(csvFileClasspath).getFile()));
 		DataSetIterator iterator = new RecordReaderDataSetIterator(rr, batchSize, labelIndex, numClasses);
+		System.out.println("HERE");
 		return iterator.next();
 	}
 
@@ -148,8 +150,10 @@ public class TweetClassifier {
 
 	private float[] getFloatArrayFromSlice(INDArray rowSlice) {
 		float[] result = new float[rowSlice.columns()];
-		for (int i = 0; i < rowSlice.columns(); i++) {
-			result[i] = rowSlice.getFloat(i + 1);
+		int index = 0;
+		for (int i = 1; i < rowSlice.columns(); i++) {
+			result[index] = rowSlice.getFloat(i);
+			index++;
 		}
 		return result;
 	}

@@ -85,7 +85,7 @@ public class Vectorize {
 
 	public static void main(String args[]) {
 		Vectorize v = new Vectorize();
-		clearFiles();
+		//clearFiles();
 		v.prepareTestData();
 		v.prepareTrainData();
 
@@ -93,9 +93,9 @@ public class Vectorize {
 
 	public void prepareTrainData() {
 		System.out.println("+==========PREPARING TRAIN DATA==========+");
-		csvReader("../datasets/train/data.csv");
-		wordToVec("../datasets/train/words.txt");
-		sentenceToVec("../datasets/train/word_vectors.txt");
+//		csvReader("../datasets/train/data.csv");
+//		wordToVec("../datasets/train/words.txt");
+//		sentenceToVec("../datasets/train/word_vectors.txt");
 		csvWriter("../datasets/train/results.csv");
 		System.out.println("+==========TRAIN/results.csv prepared==========+");
 
@@ -103,15 +103,15 @@ public class Vectorize {
 
 	public void prepareTestData() {
 		System.out.println("+==========PREPARING TEST DATA==========+");
-		csvReader("../datasets/test/data.csv");
-		wordToVec("../datasets/test/words.txt");
-		sentenceToVec("../datasets/test/word_vectors.txt");
+//		csvReader("../datasets/test/data.csv");
+//		wordToVec("../datasets/test/words.txt");
+//		sentenceToVec("../datasets/test/word_vectors.txt");
 		csvWriter("../datasets/test/results.csv");
 		System.out.println("+==========TEST/results.csv prepared==========+");
 	}
 
 	public void csvWriter(String csv_file_path) {
-		System.out.println("Writing Neural Network friendly code to " + csv_file_path + "/results.csv ...");
+		System.out.println("Writing Neural Network friendly code to " + csv_file_path + " ... ");
 		String sentenceFileToRead = "";
 		String csvFileToRead = "";
 		if (csv_file_path.contains("train")) {
@@ -130,12 +130,15 @@ public class Vectorize {
 			Scanner sc = new Scanner(file);
 			while (sc.hasNext() && sentimentIndex < sentiments.size()) {
 				String s = sc.nextLine();
-				if (s.contains("NO SENTENCE VECTOR")) {
+				if (s.contains("NO SENTENCE VECTOR") || sentiments.get(sentimentIndex) == 2) {
 					sentimentIndex++;
 					continue;
 				} else {
 					s = s.replaceAll("\\[|\\]", "");
 					// add comma so that split occurs correctly
+					if(sentiments.get(sentimentIndex) == 4) {
+						sentiments.set(sentimentIndex, 1);
+					}
 					String recordString = sentiments.get(sentimentIndex) + "," + s;
 					sentimentIndex++;
 					String[] record = recordString.split(",");
