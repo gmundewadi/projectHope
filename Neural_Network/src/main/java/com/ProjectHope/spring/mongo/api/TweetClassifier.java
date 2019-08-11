@@ -1,8 +1,12 @@
 package com.ProjectHope.spring.mongo.api;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,6 +41,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import au.com.bytecode.opencsv.CSVReader;
+
 public class TweetClassifier {
 
 	private static Logger log = LoggerFactory.getLogger(TweetClassifier.class);
@@ -55,7 +61,7 @@ public class TweetClassifier {
 
 		// Second: the RecordReaderDataSetIterator handles conversion to DataSet
 		// objects, ready for use in neural network
-		int labelIndex = 99; // 5 values in each row of the animals.csv CSV: 4 input features followed by an
+		int labelIndex = 100; // 5 values in each row of the animals.csv CSV: 4 input features followed by an
 								// integer label (class) index. Labels are the 5th value (index 4) in each row
 		int numClasses = 2; // 2 classes (types of tweet) in the results.csv data set. Classes have integer
 							// values 0 or 1
@@ -141,11 +147,14 @@ public class TweetClassifier {
 
 	public Map<Integer, Tweet> objectify(DataSet testData) {
 		Map<Integer, Tweet> iTweets = new HashMap<>();
-		INDArray features = testData.getFeatures();
-		for (int i = 0; i < features.rows(); i++) {
-			INDArray slice = features.slice(i);
-			float[] tweetArray = getFloatArrayFromSlice(slice);
-			Tweet t = new Tweet((int) tweetArray[tweetArray.length-1], tweetArray);
+		INDArray tweets = testData.getFeatures();
+		INDArray sentiments = testData.getLabels();
+		for (int i = 0; i < tweets.rows(); i++) {
+			INDArray tweetSlice = tweets.slice(i);
+			INDArray sentimentSlice = sentiments.slice(i);
+			float[] tweetArray = getFloatArrayFromSlice(tweetSlice);
+			int sentiment = sentimentSlice.getInt(0);
+			Tweet t = new Tweet(sentiment, tweetArray);
 			iTweets.put(i, t);
 		}
 		return iTweets;
@@ -161,7 +170,7 @@ public class TweetClassifier {
 
 	private static float[] getFloatArrayFromSlice(INDArray rowSlice) {
 		float[] result = new float[rowSlice.columns()];
-		for (int i = 1; i < rowSlice.columns(); i++) {
+		for (int i = 0; i < rowSlice.columns(); i++) {
 			result[i] = rowSlice.getFloat(i);
 		}
 		return result;
@@ -184,5 +193,24 @@ public class TweetClassifier {
 		}
 		System.out.println("\n");
 	}
+	
+	public List<Integer> getSentiments(String csv_file_path) {
+		try {
+			System.out.println("Getting sentiment labels from " + csv_file_path + " ...");
+			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csv_file_path), "utf-8"));
+			CSVReader csvReader = new CSVReader(reader);
+			String[] nextRecord;
+			List<Integer> sentiments = new ArrayList<>();
+			while ((nextRecord = csvReader.readNext()) != null) {
+				sentiments.add(Integer.parseInt(nextRecord[0]));
+			}
+			return sentiments;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null; // return statement for compilation only
+	}
+	
+	
 
 }
