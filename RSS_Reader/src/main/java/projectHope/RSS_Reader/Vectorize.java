@@ -79,13 +79,14 @@ import org.slf4j.LoggerFactory;
 public class Vectorize {
 
 	private static Logger log = LoggerFactory.getLogger(Vectorize.class);
+	private static String Neural_Net_File_Path = "../Neural_Network/src/main/resources/datasets";
 
 	public static final String DATA_PATH = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),
 			"TRAINED_DATA_PATH");
 
 	public static void main(String args[]) {
 		Vectorize v = new Vectorize();
-		//clearFiles();
+		clearFiles();
 		v.prepareTestData();
 		v.prepareTrainData();
 
@@ -93,20 +94,20 @@ public class Vectorize {
 
 	public void prepareTrainData() {
 		System.out.println("+==========PREPARING TRAIN DATA==========+");
-//		csvReader("../datasets/train/data.csv");
-//		wordToVec("../datasets/train/words.txt");
-//		sentenceToVec("../datasets/train/word_vectors.txt");
-		csvWriter("../datasets/train/results.csv");
+		csvReader(Neural_Net_File_Path + "/train/data.csv");
+		wordToVec(Neural_Net_File_Path + "/train/words.txt");
+		sentenceToVec(Neural_Net_File_Path + "/train/word_vectors.txt");
+		csvWriter(Neural_Net_File_Path + "/train/results.csv");
 		System.out.println("+==========TRAIN/results.csv prepared==========+");
 
 	}
 
 	public void prepareTestData() {
 		System.out.println("+==========PREPARING TEST DATA==========+");
-//		csvReader("../datasets/test/data.csv");
-//		wordToVec("../datasets/test/words.txt");
-//		sentenceToVec("../datasets/test/word_vectors.txt");
-		csvWriter("../datasets/test/results.csv");
+		csvReader(Neural_Net_File_Path + "/test/data.csv");
+		wordToVec(Neural_Net_File_Path + "/test/words.txt");
+		sentenceToVec(Neural_Net_File_Path + "/test/word_vectors.txt");
+		csvWriter(Neural_Net_File_Path + "/test/results.csv");
 		System.out.println("+==========TEST/results.csv prepared==========+");
 	}
 
@@ -115,11 +116,11 @@ public class Vectorize {
 		String sentenceFileToRead = "";
 		String csvFileToRead = "";
 		if (csv_file_path.contains("train")) {
-			sentenceFileToRead = "../datasets/train/sentence_vectors.txt";
-			csvFileToRead = "../datasets/train/data.csv";
+			sentenceFileToRead = Neural_Net_File_Path + "/train/sentence_vectors.txt";
+			csvFileToRead = Neural_Net_File_Path + "/train/data.csv";
 		} else {
-			sentenceFileToRead = "../datasets/test/sentence_vectors.txt";
-			csvFileToRead = "../datasets/test/data.csv";
+			sentenceFileToRead = Neural_Net_File_Path + "/test/sentence_vectors.txt";
+			csvFileToRead = Neural_Net_File_Path + "/test/data.csv";
 		}
 		try {
 			CSVWriter writer = new CSVWriter(new FileWriter(csv_file_path));
@@ -159,9 +160,9 @@ public class Vectorize {
 			System.out.println("Reading data.csv file from " + csv_file_path + " ... ");
 			String fileToWrite = "";
 			if (csv_file_path.contains("train")) {
-				fileToWrite = "../datasets/train/words.txt";
+				fileToWrite = Neural_Net_File_Path + "/train/words.txt";
 			} else {
-				fileToWrite = "../datasets/test/words.txt";
+				fileToWrite = Neural_Net_File_Path + "/test/words.txt";
 			}
 			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csv_file_path), "utf-8"));
 			CSVReader csvReader = new CSVReader(reader);
@@ -183,11 +184,11 @@ public class Vectorize {
 			String fileToWrite = "";
 			String fileToRead = "";
 			if (word_vector_file_path.contains("train")) {
-				fileToWrite = "../datasets/train/sentence_vectors.txt";
-				fileToRead = "../datasets/train/words.txt";
+				fileToWrite = Neural_Net_File_Path + "/train/sentence_vectors.txt";
+				fileToRead = Neural_Net_File_Path + "/train/words.txt";
 			} else {
-				fileToWrite = "../datasets/test/sentence_vectors.txt";
-				fileToRead = "../datasets/test/words.txt";
+				fileToWrite = Neural_Net_File_Path + "/test/sentence_vectors.txt";
+				fileToRead = Neural_Net_File_Path + "/test/words.txt";
 			}
 			Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel(word_vector_file_path);
 			BufferedWriter writer = new BufferedWriter(new FileWriter(fileToWrite));
@@ -226,9 +227,9 @@ public class Vectorize {
 			System.out.println("Building word to vector model to " + word_file_path + " ... ");
 			String fileToWrite = "";
 			if (word_file_path.contains("train")) {
-				fileToWrite = "../datasets/train/word_vectors.txt";
+				fileToWrite = Neural_Net_File_Path + "/train/word_vectors.txt";
 			} else {
-				fileToWrite = "../datasets/test/word_vectors.txt";
+				fileToWrite = Neural_Net_File_Path + "/test/word_vectors.txt";
 			}
 			SentenceIterator iter = new LineSentenceIterator(new File(word_file_path));
 
@@ -302,17 +303,17 @@ public class Vectorize {
 	public static void clearFiles() {
 		try {
 			System.out.println("Clearing /datasets/train words.txt, word_vectors.txt, and sentence_vectors.txt ... ");
-			PrintWriter train_words = new PrintWriter("../datasets/train/words.txt");
-			PrintWriter train_word_vectors = new PrintWriter("../datasets/train/word_vectors.txt");
-			PrintWriter train_sentence_vectors = new PrintWriter("../datasets/train/sentence_vectors.txt");
+			PrintWriter train_words = new PrintWriter(Neural_Net_File_Path + "/train/words.txt");
+			PrintWriter train_word_vectors = new PrintWriter(Neural_Net_File_Path + "/train/word_vectors.txt");
+			PrintWriter train_sentence_vectors = new PrintWriter(Neural_Net_File_Path + "/train/sentence_vectors.txt");
 			train_words.close();
 			train_word_vectors.close();
 			train_sentence_vectors.close();
 
 			System.out.println("Clearing /datasets/test words.txt, word_vectors.txt, and sentence_vectors.txt ... ");
-			PrintWriter test_words = new PrintWriter("../datasets/test/words.txt");
-			PrintWriter test_word_vectors = new PrintWriter("../datasets/test/word_vectors.txt");
-			PrintWriter test_sentence_vectors = new PrintWriter("../datasets/test/sentence_vectors.txt");
+			PrintWriter test_words = new PrintWriter(Neural_Net_File_Path + "/test/words.txt");
+			PrintWriter test_word_vectors = new PrintWriter(Neural_Net_File_Path + "/test/word_vectors.txt");
+			PrintWriter test_sentence_vectors = new PrintWriter(Neural_Net_File_Path + "/test/sentence_vectors.txt");
 			test_words.close();
 			test_word_vectors.close();
 			test_sentence_vectors.close();

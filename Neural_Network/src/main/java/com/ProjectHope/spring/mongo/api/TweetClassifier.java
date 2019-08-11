@@ -61,17 +61,18 @@ public class TweetClassifier {
 
 		// Second: the RecordReaderDataSetIterator handles conversion to DataSet
 		// objects, ready for use in neural network
-		int labelIndex = 100; // 5 values in each row of the animals.csv CSV: 4 input features followed by an
-								// integer label (class) index. Labels are the 5th value (index 4) in each row
+		int labelIndex = 100; // 101 values in each row of the animals.csv CSV: 100 input features followed by
+								// an
+								// integer label (class) index. Labels are the 101th value (index 100) in each
+								// row
 		int numClasses = 2; // 2 classes (types of tweet) in the results.csv data set. Classes have integer
 							// values 0 or 1
 
-		int batchSizeTraining = 1000; // Tweets training data set: 30 examples total. We are loading all of them into
-										// one DataSet (not recommended for large data sets)
+		int batchSizeTraining = 1000; // Tweets training data set: 100000+ examples total.
 		DataSet trainingData = readCSVDataset(twitterDataTrainFile, batchSizeTraining, labelIndex, numClasses);
 
 		// this is the data we want to classify
-		int batchSizeTest = 23;
+		int batchSizeTest = 349;
 		DataSet testData = readCSVDataset(twitterDataTestFile, batchSizeTest, labelIndex, numClasses);
 
 		// make the data model for records prior to normalization, because it
@@ -80,6 +81,7 @@ public class TweetClassifier {
 
 		// We need to normalize our data. We'll use NormalizeStandardize (which gives us
 		// mean 0, unit variance):
+		trainingData.shuffle();
 		DataNormalization normalizer = new NormalizerStandardize();
 		normalizer.fit(trainingData); // Collect the statistics (mean/stdev) from the training data. This does not
 										// modify the input data
@@ -90,22 +92,17 @@ public class TweetClassifier {
 		// Configure neural network
 		final int numInputs = 100;
 		int outputNum = 2;
-		int epochs = 1000;
+		int epochs = 10;
 		long seed = 6;
 
-        log.info("Build model....");
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(seed)
-                .activation(Activation.TANH)
-                .weightInit(WeightInit.XAVIER)
-                .updater(new Sgd(0.1))
-                .l2(1e-4)
-                .list()
-                .layer(new DenseLayer.Builder().nIn(numInputs).nOut(3).build())
-                .layer(new DenseLayer.Builder().nIn(3).nOut(3).build())
-                .layer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .activation(Activation.SOFTMAX).nIn(3).nOut(outputNum).build())
-                .build();
+		log.info("Build model....");
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.TANH)
+				.weightInit(WeightInit.XAVIER).updater(new Sgd(0.1)).l2(1e-4).list()
+				.layer(new DenseLayer.Builder().nIn(numInputs).nOut(3).build())
+				.layer(new DenseLayer.Builder().nIn(3).nOut(3).build())
+				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+						.activation(Activation.SOFTMAX).nIn(3).nOut(outputNum).build())
+				.build();
 
 		// run the model
 		MultiLayerNetwork model = new MultiLayerNetwork(conf);
@@ -131,19 +128,33 @@ public class TweetClassifier {
 	public static void logTweets(Map<Integer, Tweet> tweets) {
 		for (int key : tweets.keySet()) {
 			Tweet t = tweets.get(key);
-			System.out.println("PREDICTED: " + t.getTweetClass() + " | ACTUAL: " + t.getSentiment());
+			String actual = "";
+			String accuracy = "";
+			if (t.getSentiment() == 1) {
+				actual = "positive";
+			} else {
+				actual = "negative";
+			}
+			if (actual.equals(t.getTweetClass())) {
+				accuracy = "accurate";
+				System.out.println("predicted: " + t.getTweetClass() + " | actual: " + actual + " | ");
+
+			} else {
+				accuracy = "innacurate";
+				System.out.println("predicted: " + t.getTweetClass() + " | actual: " + actual + " | " + accuracy);
+			}
+
 		}
 	}
 
-	private static DataSet readCSVDataset(
-            String csvFileClasspath, int batchSize, int labelIndex, int numClasses)
-            throws IOException, InterruptedException{
+	private static DataSet readCSVDataset(String csvFileClasspath, int batchSize, int labelIndex, int numClasses)
+			throws IOException, InterruptedException {
 
-        RecordReader rr = new CSVRecordReader();
-        rr.initialize(new FileSplit(new ClassPathResource(csvFileClasspath).getFile()));
-        DataSetIterator iterator = new RecordReaderDataSetIterator(rr,batchSize,labelIndex,numClasses);
-        return iterator.next();
-    }
+		RecordReader rr = new CSVRecordReader();
+		rr.initialize(new FileSplit(new ClassPathResource(csvFileClasspath).getFile()));
+		DataSetIterator iterator = new RecordReaderDataSetIterator(rr, batchSize, labelIndex, numClasses);
+		return iterator.next();
+	}
 
 	public Map<Integer, Tweet> objectify(DataSet testData) {
 		Map<Integer, Tweet> iTweets = new HashMap<>();
@@ -153,7 +164,7 @@ public class TweetClassifier {
 			INDArray tweetSlice = tweets.slice(i);
 			INDArray sentimentSlice = sentiments.slice(i);
 			float[] tweetArray = getFloatArrayFromSlice(tweetSlice);
-			int sentiment = sentimentSlice.getInt(0);
+			int sentiment = sentimentSlice.getInt(1);
 			Tweet t = new Tweet(sentiment, tweetArray);
 			iTweets.put(i, t);
 		}
@@ -193,24 +204,4 @@ public class TweetClassifier {
 		}
 		System.out.println("\n");
 	}
-	
-	public List<Integer> getSentiments(String csv_file_path) {
-		try {
-			System.out.println("Getting sentiment labels from " + csv_file_path + " ...");
-			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csv_file_path), "utf-8"));
-			CSVReader csvReader = new CSVReader(reader);
-			String[] nextRecord;
-			List<Integer> sentiments = new ArrayList<>();
-			while ((nextRecord = csvReader.readNext()) != null) {
-				sentiments.add(Integer.parseInt(nextRecord[0]));
-			}
-			return sentiments;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null; // return statement for compilation only
-	}
-	
-	
-
 }
