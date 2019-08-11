@@ -66,7 +66,7 @@ public class TweetClassifier {
 		int numClasses = 2; // 2 classes (types of tweet) in the results.csv data set. Classes have integer
 							// values 0 or 1
 
-		int batchSizeTraining = 100; // Tweets training data set: 30 examples total. We are loading all of them into
+		int batchSizeTraining = 1000; // Tweets training data set: 30 examples total. We are loading all of them into
 										// one DataSet (not recommended for large data sets)
 		DataSet trainingData = readCSVDataset(twitterDataTrainFile, batchSizeTraining, labelIndex, numClasses);
 
