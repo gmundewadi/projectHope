@@ -32,9 +32,14 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TweetClassifier {
+
+	private static Logger log = LoggerFactory.getLogger(TweetClassifier.class);
 
 	private static Map<Integer, String> classifiers;
 
@@ -48,80 +53,91 @@ public class TweetClassifier {
 	public void classify(String twitterDataTrainFile, String twitterDataTestFile)
 			throws FileNotFoundException, IOException, InterruptedException {
 
-		int labelIndex = 0;
-		int numClasses = 2;
+		// Second: the RecordReaderDataSetIterator handles conversion to DataSet
+		// objects, ready for use in neural network
+		int labelIndex = 99; // 5 values in each row of the animals.csv CSV: 4 input features followed by an
+								// integer label (class) index. Labels are the 5th value (index 4) in each row
+		int numClasses = 2; // 2 classes (types of tweet) in the results.csv data set. Classes have integer
+							// values 0 or 1
 
-		int batchSizeTraining = 100000;
-
-		System.out.println("----Loading training data---");
-
+		int batchSizeTraining = 100; // Tweets training data set: 30 examples total. We are loading all of them into
+										// one DataSet (not recommended for large data sets)
 		DataSet trainingData = readCSVDataset(twitterDataTrainFile, batchSizeTraining, labelIndex, numClasses);
 
-		// shuffle our training data to avoid any impact of ordering
-		trainingData.shuffle();
-
-		int batchSizeTest = 5;
-		System.out.println("----Loading test data---");
+		// this is the data we want to classify
+		int batchSizeTest = 23;
 		DataSet testData = readCSVDataset(twitterDataTestFile, batchSizeTest, labelIndex, numClasses);
 
-		Map<Integer, Tweet> tweets = objectify(trainingData);
+		// make the data model for records prior to normalization, because it
+		// changes the data.
+		Map<Integer, Tweet> tweets = objectify(testData);
 
-		// Neural nets all about numbers. Lets normalize our data
+		// We need to normalize our data. We'll use NormalizeStandardize (which gives us
+		// mean 0, unit variance):
 		DataNormalization normalizer = new NormalizerStandardize();
-		// Collect the statistics from the training data. This does
-		// not modify the input data
-		normalizer.fit(trainingData);
+		normalizer.fit(trainingData); // Collect the statistics (mean/stdev) from the training data. This does not
+										// modify the input data
+		normalizer.transform(trainingData); // Apply normalization to the training data
+		normalizer.transform(testData); // Apply normalization to the test data. This is using statistics calculated
+										// from the *training* set
 
-		// Apply normalization to the training data
-		normalizer.transform(trainingData);
-
-		// Apply normalization to the test data.
-		normalizer.transform(testData);
-
-		int numInputs = 100;
+		// Configure neural network
+		final int numInputs = 100;
 		int outputNum = 2;
-		int iterations = 1000;
-		long seed = 123;
+		int epochs = 1000;
+		long seed = 6;
 
-		System.out.println("Building model....");
-		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.TANH)
-				.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).weightInit(WeightInit.XAVIER)
-				.l2Bias(1e-4).list().layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(3).build())
-				.layer(1, new DenseLayer.Builder().nIn(3).nOut(3).build())
-				.layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-						.activation(Activation.SOFTMAX).nIn(3).nOut(outputNum).build())
-				.build();
+        log.info("Build model....");
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(seed)
+                .activation(Activation.TANH)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Sgd(0.1))
+                .l2(1e-4)
+                .list()
+                .layer(new DenseLayer.Builder().nIn(numInputs).nOut(3).build())
+                .layer(new DenseLayer.Builder().nIn(3).nOut(3).build())
+                .layer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .activation(Activation.SOFTMAX).nIn(3).nOut(outputNum).build())
+                .build();
 
+		// run the model
 		MultiLayerNetwork model = new MultiLayerNetwork(conf);
 		model.init();
 		model.setListeners(new ScoreIterationListener(100));
 
-		for (int i = 0; i < iterations; i++) {
+		for (int i = 0; i < epochs; i++) {
 			model.fit(trainingData);
 		}
 
 		// evaluate the model on the test set
-		Evaluation eval = new Evaluation(3);
+		Evaluation eval = new Evaluation(2);
 		INDArray output = model.output(testData.getFeatures());
 
 		eval.eval(testData.getLabels(), output);
-
-		System.out.println(eval.stats());
-
-		System.out.println(output);
+		log.info(eval.stats());
 
 		classify(output, tweets);
+		logTweets(tweets);
 
 	}
 
-	public DataSet readCSVDataset(String csvFileClasspath, int batchSize, int labelIndex, int numClasses)
-			throws IOException, InterruptedException {
-
-		RecordReader rr = new CSVRecordReader();
-		rr.initialize(new FileSplit(new ClassPathResource(csvFileClasspath).getFile()));
-		DataSetIterator iterator = new RecordReaderDataSetIterator(rr, batchSize, labelIndex, numClasses);
-		return iterator.next();
+	public static void logTweets(Map<Integer, Tweet> tweets) {
+		for (int key : tweets.keySet()) {
+			Tweet t = tweets.get(key);
+			System.out.println("PREDICTED: " + t.getTweetClass() + " | ACTUAL: " + t.getSentiment());
+		}
 	}
+
+	private static DataSet readCSVDataset(
+            String csvFileClasspath, int batchSize, int labelIndex, int numClasses)
+            throws IOException, InterruptedException{
+
+        RecordReader rr = new CSVRecordReader();
+        rr.initialize(new FileSplit(new ClassPathResource(csvFileClasspath).getFile()));
+        DataSetIterator iterator = new RecordReaderDataSetIterator(rr,batchSize,labelIndex,numClasses);
+        return iterator.next();
+    }
 
 	public Map<Integer, Tweet> objectify(DataSet testData) {
 		Map<Integer, Tweet> iTweets = new HashMap<>();
@@ -129,26 +145,24 @@ public class TweetClassifier {
 		for (int i = 0; i < features.rows(); i++) {
 			INDArray slice = features.slice(i);
 			float[] tweetArray = getFloatArrayFromSlice(slice);
-			Tweet t = new Tweet(slice.getInt(0), tweetArray);
+			Tweet t = new Tweet((int) tweetArray[tweetArray.length-1], tweetArray);
 			iTweets.put(i, t);
 		}
 		return iTweets;
 	}
 
-	private void classify(INDArray output, Map<Integer, Tweet> flowers) {
+	private void classify(INDArray output, Map<Integer, Tweet> tweets) {
 		for (int i = 0; i < output.rows(); i++) {
-			Tweet irs = flowers.get(i);
+			Tweet irs = tweets.get(i);
 			// set the classification from the fitted results
 			irs.setTweetClass(classifiers.get(maxIndex(getFloatArrayFromSlice(output.slice(i)))));
 		}
 	}
 
-	private float[] getFloatArrayFromSlice(INDArray rowSlice) {
+	private static float[] getFloatArrayFromSlice(INDArray rowSlice) {
 		float[] result = new float[rowSlice.columns()];
-		int index = 0;
 		for (int i = 1; i < rowSlice.columns(); i++) {
-			result[index] = rowSlice.getFloat(i);
-			index++;
+			result[i] = rowSlice.getFloat(i);
 		}
 		return result;
 	}
@@ -162,6 +176,13 @@ public class TweetClassifier {
 			}
 		}
 		return maxIndex;
+	}
+
+	public void printArray(float[] arr) {
+		for (float f : arr) {
+			System.out.print(f + " ");
+		}
+		System.out.println("\n");
 	}
 
 }

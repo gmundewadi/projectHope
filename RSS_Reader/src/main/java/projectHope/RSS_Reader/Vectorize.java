@@ -135,11 +135,11 @@ public class Vectorize {
 					continue;
 				} else {
 					s = s.replaceAll("\\[|\\]", "");
-					// add comma so that split occurs correctly
-					if(sentiments.get(sentimentIndex) == 4) {
+					if (sentiments.get(sentimentIndex) == 4) {
 						sentiments.set(sentimentIndex, 1);
 					}
-					String recordString = sentiments.get(sentimentIndex) + "," + s;
+					// add comma so that split occurs correctly
+					String recordString = s + "," + sentiments.get(sentimentIndex);
 					sentimentIndex++;
 					String[] record = recordString.split(",");
 					writer.writeNext(record);
@@ -247,7 +247,7 @@ public class Vectorize {
 			t.setTokenPreProcessor(new CommonPreprocessor());
 
 			log.info("Building model....");
-			Word2Vec vec = new Word2Vec.Builder().minWordFrequency(2).iterations(1).layerSize(100).seed(42)
+			Word2Vec vec = new Word2Vec.Builder().minWordFrequency(5).iterations(1).layerSize(100).seed(42)
 					.windowSize(5).iterate(iter).tokenizerFactory(t).build();
 
 			log.info("Fitting Word2Vec model....");
