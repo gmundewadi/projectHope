@@ -68,11 +68,11 @@ public class TweetClassifier {
 		int numClasses = 2; // 2 classes (types of tweet) in the results.csv data set. Classes have integer
 							// values 0 or 1
 
-		int batchSizeTraining = 1000; // Tweets training data set: 100000+ examples total.
+		int batchSizeTraining = 100; // Tweets training data set: 100000+ examples total.
 		DataSet trainingData = readCSVDataset(twitterDataTrainFile, batchSizeTraining, labelIndex, numClasses);
 
 		// this is the data we want to classify
-		int batchSizeTest = 349;
+		int batchSizeTest = 346;
 		DataSet testData = readCSVDataset(twitterDataTestFile, batchSizeTest, labelIndex, numClasses);
 
 		// make the data model for records prior to normalization, because it
@@ -81,7 +81,7 @@ public class TweetClassifier {
 
 		// We need to normalize our data. We'll use NormalizeStandardize (which gives us
 		// mean 0, unit variance):
-		trainingData.shuffle();
+		trainingData.shuffle(123);
 		DataNormalization normalizer = new NormalizerStandardize();
 		normalizer.fit(trainingData); // Collect the statistics (mean/stdev) from the training data. This does not
 										// modify the input data
