@@ -81,7 +81,7 @@ public class TweetClassifier {
 
 		// We need to normalize our data. We'll use NormalizeStandardize (which gives us
 		// mean 0, unit variance):
-		trainingData.shuffle(123);
+		trainingData.shuffle();
 		DataNormalization normalizer = new NormalizerStandardize();
 		normalizer.fit(trainingData); // Collect the statistics (mean/stdev) from the training data. This does not
 										// modify the input data
@@ -96,7 +96,7 @@ public class TweetClassifier {
 		long seed = 6;
 
 		log.info("Build model....");
-		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU)
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.TANH)
 				.weightInit(WeightInit.XAVIER).updater(new Sgd(0.1)).l2(1e-4).list()
 				.layer(new DenseLayer.Builder().nIn(numInputs).nOut(3).build())
 				.layer(new DenseLayer.Builder().nIn(3).nOut(3).build())

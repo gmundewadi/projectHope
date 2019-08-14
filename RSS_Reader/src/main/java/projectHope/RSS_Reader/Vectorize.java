@@ -128,7 +128,8 @@ public class Vectorize {
 			// Create record
 			int sentimentIndex = 0;
 			List<Integer> sentiments = getSentiments(csvFileToRead);
-			File file = new File(sentenceFileToRead);
+			List<String[]> results = new ArrayList<String[]>();
+ 			File file = new File(sentenceFileToRead);
 			Scanner sc = new Scanner(file);
 			int positives = 0;
 			int negatives = 0;
@@ -155,9 +156,11 @@ public class Vectorize {
 					String recordString = s + "," + sentiment;
 					sentimentIndex++;
 					String[] record = recordString.split(",");
-					writer.writeNext(record);
+					results.add(record);
 				}
 			}
+			Collections.shuffle(results);
+			writer.writeAll(results);
 			// close the writer
 			writer.close();
 			sc.close();
