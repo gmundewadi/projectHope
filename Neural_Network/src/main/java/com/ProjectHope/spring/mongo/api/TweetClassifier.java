@@ -68,7 +68,7 @@ public class TweetClassifier {
 		int numClasses = 2; // 2 classes (types of tweet) in the results.csv data set. Classes have integer
 							// values 0 or 1
 
-		int batchSizeTraining = 100; // Tweets training data set: 100000+ examples total.
+		int batchSizeTraining = 346; // Tweets training data set: 100000+ examples total.
 		DataSet trainingData = readCSVDataset(twitterDataTrainFile, batchSizeTraining, labelIndex, numClasses);
 
 		// this is the data we want to classify
@@ -91,17 +91,17 @@ public class TweetClassifier {
 
 		// Configure neural network
 		final int numInputs = 100;
-		int outputNum = 2;
-		int epochs = 10;
+		int numOutputs = 2;
+		int epochs = 50;
 		long seed = 6;
 
 		log.info("Build model....");
-		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.TANH)
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.RELU)
 				.weightInit(WeightInit.XAVIER).updater(new Sgd(0.1)).l2(1e-4).list()
 				.layer(new DenseLayer.Builder().nIn(numInputs).nOut(3).build())
 				.layer(new DenseLayer.Builder().nIn(3).nOut(3).build())
 				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-						.activation(Activation.SOFTMAX).nIn(3).nOut(outputNum).build())
+						.activation(Activation.SOFTMAX).nIn(3).nOut(numOutputs).build())
 				.build();
 
 		// run the model
@@ -124,6 +124,7 @@ public class TweetClassifier {
 		logTweets(tweets);
 
 	}
+
 
 	public static void logTweets(Map<Integer, Tweet> tweets) {
 		for (int key : tweets.keySet()) {
@@ -203,5 +204,9 @@ public class TweetClassifier {
 			System.out.print(f + " ");
 		}
 		System.out.println("\n");
+	}
+	
+	public void shuffleCSV(String csv_file_path) {
+		
 	}
 }

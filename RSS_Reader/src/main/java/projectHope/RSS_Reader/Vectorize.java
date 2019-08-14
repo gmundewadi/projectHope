@@ -16,6 +16,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -129,6 +130,8 @@ public class Vectorize {
 			List<Integer> sentiments = getSentiments(csvFileToRead);
 			File file = new File(sentenceFileToRead);
 			Scanner sc = new Scanner(file);
+			int positives = 0;
+			int negatives = 0;
 			while (sc.hasNext() && sentimentIndex < sentiments.size()) {
 				String s = sc.nextLine();
 				if (s.contains("NO SENTENCE VECTOR") || sentiments.get(sentimentIndex) == 2) {
@@ -136,11 +139,20 @@ public class Vectorize {
 					continue;
 				} else {
 					s = s.replaceAll("\\[|\\]", "");
-					if (sentiments.get(sentimentIndex) == 4) {
-						sentiments.set(sentimentIndex, 1);
+					int sentiment = sentiments.get(sentimentIndex);
+					// this if statement ensures that the training data reamains
+					// evenly split between negative and positive news
+					if (negatives >= 100000 && sentiment == 0 || positives >= 100000 && sentiment == 4) {
+						sentimentIndex++;
+						continue;
+					} else if(sentiment == 4) {
+						positives++;
+						sentiment = 1;
+					} else if( sentiment == 0) {
+						negatives++;
 					}
 					// add comma so that split occurs correctly
-					String recordString = s + "," + sentiments.get(sentimentIndex);
+					String recordString = s + "," + sentiment;
 					sentimentIndex++;
 					String[] record = recordString.split(",");
 					writer.writeNext(record);
@@ -248,7 +260,7 @@ public class Vectorize {
 			t.setTokenPreProcessor(new CommonPreprocessor());
 
 			log.info("Building model....");
-			Word2Vec vec = new Word2Vec.Builder().minWordFrequency(10).iterations(1).layerSize(100).seed(42)
+			Word2Vec vec = new Word2Vec.Builder().minWordFrequency(2).iterations(1).layerSize(100).seed(42)
 					.windowSize(5).iterate(iter).tokenizerFactory(t).build();
 
 			log.info("Fitting Word2Vec model....");
