@@ -87,7 +87,7 @@ public class Vectorize {
 
 	public static void main(String args[]) {
 		Vectorize v = new Vectorize();
-		clearFiles();
+		//clearFiles();
 		v.prepareTestData();
 		v.prepareTrainData();
 
@@ -95,9 +95,9 @@ public class Vectorize {
 
 	public void prepareTrainData() {
 		System.out.println("+==========PREPARING TRAIN DATA==========+");
-		csvReader(Neural_Net_File_Path + "/train/data.csv");
-		wordToVec(Neural_Net_File_Path + "/train/words.txt");
-		sentenceToVec(Neural_Net_File_Path + "/train/word_vectors.txt");
+//		csvReader(Neural_Net_File_Path + "/train/data.csv");
+//		wordToVec(Neural_Net_File_Path + "/train/words.txt");
+//		sentenceToVec(Neural_Net_File_Path + "/train/word_vectors.txt");
 		csvWriter(Neural_Net_File_Path + "/train/results.csv");
 		System.out.println("+==========TRAIN/results.csv prepared==========+");
 
@@ -105,9 +105,9 @@ public class Vectorize {
 
 	public void prepareTestData() {
 		System.out.println("+==========PREPARING TEST DATA==========+");
-		csvReader(Neural_Net_File_Path + "/test/data.csv");
-		wordToVec(Neural_Net_File_Path + "/test/words.txt");
-		sentenceToVec(Neural_Net_File_Path + "/test/word_vectors.txt");
+//		csvReader(Neural_Net_File_Path + "/test/data.csv");
+//		wordToVec(Neural_Net_File_Path + "/test/words.txt");
+//		sentenceToVec(Neural_Net_File_Path + "/test/word_vectors.txt");
 		csvWriter(Neural_Net_File_Path + "/test/results.csv");
 		System.out.println("+==========TEST/results.csv prepared==========+");
 	}
@@ -160,7 +160,9 @@ public class Vectorize {
 				}
 			}
 			Collections.shuffle(results);
-			writer.writeAll(results);
+			for(String[] r: results) {
+				writer.writeNext(r);
+			}
 			// close the writer
 			writer.close();
 			sc.close();

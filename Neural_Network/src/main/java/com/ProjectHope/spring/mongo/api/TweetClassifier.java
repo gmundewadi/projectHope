@@ -24,6 +24,7 @@ import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -38,6 +39,7 @@ import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +70,7 @@ public class TweetClassifier {
 		int numClasses = 2; // 2 classes (types of tweet) in the results.csv data set. Classes have integer
 							// values 0 or 1
 
-		int batchSizeTraining = 346; // Tweets training data set: 100000+ examples total.
+		int batchSizeTraining = 320; // Tweets training data set: 100000+ examples total.
 		DataSet trainingData = readCSVDataset(twitterDataTrainFile, batchSizeTraining, labelIndex, numClasses);
 
 		// this is the data we want to classify
@@ -81,7 +83,7 @@ public class TweetClassifier {
 
 		// We need to normalize our data. We'll use NormalizeStandardize (which gives us
 		// mean 0, unit variance):
-		trainingData.shuffle();
+		trainingData.shuffle(123);
 		DataNormalization normalizer = new NormalizerStandardize();
 		normalizer.fit(trainingData); // Collect the statistics (mean/stdev) from the training data. This does not
 										// modify the input data
@@ -92,17 +94,25 @@ public class TweetClassifier {
 		// Configure neural network
 		final int numInputs = 100;
 		int numOutputs = 2;
-		int epochs = 50;
+		int epochs = 1000;
 		long seed = 6;
+		int numHiddenNodes = 2;
 
 		log.info("Build model....");
-		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.TANH)
-				.weightInit(WeightInit.XAVIER).updater(new Sgd(0.1)).l2(1e-4).list()
-				.layer(new DenseLayer.Builder().nIn(numInputs).nOut(3).build())
-				.layer(new DenseLayer.Builder().nIn(3).nOut(3).build())
-				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-						.activation(Activation.SOFTMAX).nIn(3).nOut(numOutputs).build())
-				.build();
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+			    .seed(seed)
+			    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+			    .updater(Updater.NESTEROVS)
+			    .list()
+			    .layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(numHiddenNodes)
+			            .weightInit(WeightInit.XAVIER)
+			            .activation(Activation.RELU)
+			            .build())
+			    .layer(1, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD)
+			            .weightInit(WeightInit.XAVIER)
+			            .activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER)
+			            .nIn(2).nOut(numOutputs).build())
+			    .build();
 
 		// run the model
 		MultiLayerNetwork model = new MultiLayerNetwork(conf);
@@ -121,7 +131,7 @@ public class TweetClassifier {
 		log.info(eval.stats());
 
 		classify(output, tweets);
-		logTweets(tweets);
+		//logTweets(tweets);
 
 	}
 
