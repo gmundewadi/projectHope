@@ -87,7 +87,7 @@ public class Vectorize {
 
 	public static void main(String args[]) {
 		Vectorize v = new Vectorize();
-		//clearFiles();
+		clearFiles();
 		v.prepareTestData();
 		v.prepareTrainData();
 
@@ -95,9 +95,9 @@ public class Vectorize {
 
 	public void prepareTrainData() {
 		System.out.println("+==========PREPARING TRAIN DATA==========+");
-//		csvReader(Neural_Net_File_Path + "/train/data.csv");
-//		wordToVec(Neural_Net_File_Path + "/train/words.txt");
-//		sentenceToVec(Neural_Net_File_Path + "/train/word_vectors.txt");
+		csvReader(Neural_Net_File_Path + "/train/data.csv");
+		wordToVec(Neural_Net_File_Path + "/train/words.txt");
+		sentenceToVec(Neural_Net_File_Path + "/train/word_vectors.txt");
 		csvWriter(Neural_Net_File_Path + "/train/results.csv");
 		System.out.println("+==========TRAIN/results.csv prepared==========+");
 
@@ -105,9 +105,9 @@ public class Vectorize {
 
 	public void prepareTestData() {
 		System.out.println("+==========PREPARING TEST DATA==========+");
-//		csvReader(Neural_Net_File_Path + "/test/data.csv");
-//		wordToVec(Neural_Net_File_Path + "/test/words.txt");
-//		sentenceToVec(Neural_Net_File_Path + "/test/word_vectors.txt");
+		csvReader(Neural_Net_File_Path + "/test/data.csv");
+		wordToVec(Neural_Net_File_Path + "/test/words.txt");
+		sentenceToVec(Neural_Net_File_Path + "/test/word_vectors.txt");
 		csvWriter(Neural_Net_File_Path + "/test/results.csv");
 		System.out.println("+==========TEST/results.csv prepared==========+");
 	}
@@ -143,7 +143,7 @@ public class Vectorize {
 					int sentiment = sentiments.get(sentimentIndex);
 					// this if statement ensures that the training data reamains
 					// evenly split between negative and positive news
-					if (negatives >= 100000 && sentiment == 0 || positives >= 100000 && sentiment == 4) {
+					if (negatives >= 500 && sentiment == 0 || positives >= 500 && sentiment == 4) {
 						sentimentIndex++;
 						continue;
 					} else if(sentiment == 4) {
