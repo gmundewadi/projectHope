@@ -18,10 +18,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -83,16 +85,17 @@ public class Vectorize {
 	private static String Neural_Net_File_Path = "../Neural_Network/src/main/resources/datasets";
 	private static int negativeDataSize = 200;
 	private static int positiveDataSize = 200;
+	private static Set<String> stopwords;
 
 	public static final String DATA_PATH = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),
 			"TRAINED_DATA_PATH");
 
 	public static void main(String args[]) {
 		Vectorize v = new Vectorize();
-
-		clearFiles();
-		v.prepareTestData();
-		v.prepareTrainData();
+		loadStopWords();
+//		clearFiles();
+//		v.prepareTestData();
+//		v.prepareTrainData();
 
 	}
 
@@ -113,6 +116,25 @@ public class Vectorize {
 		sentenceToVec(Neural_Net_File_Path + "/test/word_vectors.txt");
 		csvWriter(Neural_Net_File_Path + "/test/results.csv");
 		System.out.println("+==========TEST/results.csv prepared==========+");
+	}
+
+	public static void loadStopWords() {
+		try {
+			String filePath = Neural_Net_File_Path + "/stopwords.txt";
+			System.out.println("loading english stopwords from " + filePath + " into memory ...");
+			File file = new File(filePath);
+			Scanner sc = new Scanner(file);
+			stopwords = new HashSet<String>();
+			while (sc.hasNextLine()) {
+				String word = sc.nextLine();
+				System.out.println(word);
+				stopwords.add(word);
+			}
+			sc.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	public void csvWriter(String csv_file_path) {
@@ -217,7 +239,7 @@ public class Vectorize {
 			Scanner sc = new Scanner(file);
 			ArrayList<String> words = new ArrayList<>();
 			while (sc.hasNextLine()) {
-				String tweet = sc.nextLine().replaceAll("[^a-zA-Z0-9\\s]", "");
+				String tweet = sc.nextLine().replaceAll("[^a-zA-Z0-9\\s]", "").toLowerCase();
 				for (String word : tweet.split(" ")) {
 					// if word vector is not null then word frequency is greater than 5
 					if (word2Vec.getWordVector(word) != null) {
@@ -230,7 +252,12 @@ public class Vectorize {
 
 					INDArray fin = word2Vec.getWordVectorMatrix(words.get(0));
 					for (int i = 1; i < words.size(); i++) {
-						fin.add(word2Vec.getWordVectorMatrix(words.get(i)));
+						double factor = 1.0;
+						String w = words.get(i);
+						if(stopwords.contains(w)) {
+							factor = 0.5;
+						}
+						fin.add(word2Vec.getWordVectorMatrix(words.get(i)).div(1.0));
 					}
 					words.clear();
 					// INDArray wordVectors = word2Vec.getWordVectorsMean(words);
