@@ -50,6 +50,7 @@ public class TweetClassifier {
 	private static Logger log = LoggerFactory.getLogger(TweetClassifier.class);
 
 	private static Map<Integer, String> classifiers;
+	
 
 	public TweetClassifier() {
 		classifiers = new HashMap<>();
@@ -70,11 +71,11 @@ public class TweetClassifier {
 		int numClasses = 2; // 2 classes (types of tweet) in the results.csv data set. Classes have integer
 							// values 0 or 1
 
-		int batchSizeTraining = 1000; // Tweets training data set: 100000+ examples total.
+		int batchSizeTraining = 200; // Tweets training data set: 100000+ examples total.
 		DataSet trainingData = readCSVDataset(twitterDataTrainFile, batchSizeTraining, labelIndex, numClasses);
 
 		// this is the data we want to classify
-		int batchSizeTest = 346;
+		int batchSizeTest = 349;
 		DataSet testData = readCSVDataset(twitterDataTestFile, batchSizeTest, labelIndex, numClasses);
 
 		// make the data model for records prior to normalization, because it
@@ -140,19 +141,16 @@ public class TweetClassifier {
 		for (int key : tweets.keySet()) {
 			Tweet t = tweets.get(key);
 			String actual = "";
-			String accuracy = "";
 			if (t.getSentiment() == 1) {
 				actual = "positive";
 			} else {
 				actual = "negative";
 			}
 			if (actual.equals(t.getTweetClass())) {
-				accuracy = "accurate";
 				System.out.println("predicted: " + t.getTweetClass() + " | actual: " + actual + " | ");
 
 			} else {
-				accuracy = "innacurate";
-				System.out.println("predicted: " + t.getTweetClass() + " | actual: " + actual + " | " + accuracy);
+				System.out.println("predicted: " + t.getTweetClass() + " | actual: " + actual + " | innacurate");
 			}
 
 		}
@@ -174,8 +172,10 @@ public class TweetClassifier {
 		for (int i = 0; i < tweets.rows(); i++) {
 			INDArray tweetSlice = tweets.slice(i);
 			INDArray sentimentSlice = sentiments.slice(i);
+			
 			float[] tweetArray = getFloatArrayFromSlice(tweetSlice);
 			int sentiment = sentimentSlice.getInt(1);
+			
 			Tweet t = new Tweet(sentiment, tweetArray);
 			iTweets.put(i, t);
 		}
@@ -186,9 +186,12 @@ public class TweetClassifier {
 		for (int i = 0; i < output.rows(); i++) {
 			Tweet irs = tweets.get(i);
 			// set the classification from the fitted results
+			float[] predictions = getFloatArrayFromSlice(output.slice(i));
+			printArray(predictions);
 			irs.setTweetClass(classifiers.get(maxIndex(getFloatArrayFromSlice(output.slice(i)))));
 		}
 	}
+	
 
 	private static float[] getFloatArrayFromSlice(INDArray rowSlice) {
 		float[] result = new float[rowSlice.columns()];
@@ -216,7 +219,24 @@ public class TweetClassifier {
 		System.out.println("\n");
 	}
 	
-	public void shuffleCSV(String csv_file_path) {
-		
+	public Map<Integer,String> getTweets(String csv_file_path) {
+		try {
+			System.out.println("Getting tweet labels from " + csv_file_path + " ...");
+			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csv_file_path), "utf-8"));
+			CSVReader csvReader = new CSVReader(reader);
+			String[] nextRecord;
+			int index = 0;
+			Map<Integer,String> tweets = new HashMap<Integer,String>();
+			while ((nextRecord = csvReader.readNext()) != null) {
+				tweets.put(index,nextRecord[1]);
+				index++;
+			}
+			return tweets;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null; // return statement for compilation only
 	}
+
+	
 }

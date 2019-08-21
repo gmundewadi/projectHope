@@ -9,8 +9,8 @@ public class Tweet {
 	private int sentiment; // 0 is negative. 4 is positive
 	private float[] tweetVector; // sentence to vector representation of tweet
 
-	private String tweetClass;	
-	
+	private String tweetClass;
+
 	public Tweet(int sentiment, float[] tweetVector) {
 		super();
 		this.sentiment = sentiment;
@@ -43,8 +43,8 @@ public class Tweet {
 
 	@Override
 	public String toString() {
-		return "Tweet [sentiment=" + sentiment + ", tweetVector=" + Arrays.toString(tweetVector) + "]";
+		return "Tweet [sentiment=" + sentiment + ", tweetVector=" + Arrays.toString(tweetVector) + ", tweetClass="
+				+ tweetClass + "]";
 	}
 
-	
 }

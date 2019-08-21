@@ -81,12 +81,15 @@ public class Vectorize {
 
 	private static Logger log = LoggerFactory.getLogger(Vectorize.class);
 	private static String Neural_Net_File_Path = "../Neural_Network/src/main/resources/datasets";
+	private static int negativeDataSize = 200;
+	private static int positiveDataSize = 200;
 
 	public static final String DATA_PATH = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),
 			"TRAINED_DATA_PATH");
 
 	public static void main(String args[]) {
 		Vectorize v = new Vectorize();
+
 		clearFiles();
 		v.prepareTestData();
 		v.prepareTrainData();
@@ -126,41 +129,42 @@ public class Vectorize {
 		try {
 			CSVWriter writer = new CSVWriter(new FileWriter(csv_file_path));
 			// Create record
-			int sentimentIndex = 0;
+			int tweetIndex = 0;
 			List<Integer> sentiments = getSentiments(csvFileToRead);
 			List<String[]> results = new ArrayList<String[]>();
- 			File file = new File(sentenceFileToRead);
+			File file = new File(sentenceFileToRead);
 			Scanner sc = new Scanner(file);
 			int positives = 0;
 			int negatives = 0;
-			while (sc.hasNext() && sentimentIndex < sentiments.size()) {
+			while (sc.hasNext() && tweetIndex < sentiments.size()) {
 				String s = sc.nextLine();
-				if (s.contains("NO SENTENCE VECTOR") || sentiments.get(sentimentIndex) == 2) {
-					sentimentIndex++;
+				if (s.contains("NO SENTENCE VECTOR") || sentiments.get(tweetIndex) == 2) {
+					tweetIndex++;
 					continue;
 				} else {
 					s = s.replaceAll("\\[|\\]", "");
-					int sentiment = sentiments.get(sentimentIndex);
-					// this if statement ensures that the training data reamains
+					int sentiment = sentiments.get(tweetIndex);
+					// this if statement ensures that the training data remains
 					// evenly split between negative and positive news
-					if (negatives >= 500 && sentiment == 0 || positives >= 500 && sentiment == 4) {
-						sentimentIndex++;
+					if (negatives >= negativeDataSize && sentiment == 0
+							|| positives >= positiveDataSize && sentiment == 4) {
+						tweetIndex++;
 						continue;
-					} else if(sentiment == 4) {
+					} else if (sentiment == 4) {
 						positives++;
 						sentiment = 1;
-					} else if( sentiment == 0) {
+					} else if (sentiment == 0) {
 						negatives++;
 					}
 					// add comma so that split occurs correctly
 					String recordString = s + "," + sentiment;
-					sentimentIndex++;
+					tweetIndex++;
 					String[] record = recordString.split(",");
 					results.add(record);
 				}
 			}
 			Collections.shuffle(results);
-			for(String[] r: results) {
+			for (String[] r : results) {
 				writer.writeNext(r);
 			}
 			// close the writer
@@ -215,7 +219,7 @@ public class Vectorize {
 			while (sc.hasNextLine()) {
 				String tweet = sc.nextLine().replaceAll("[^a-zA-Z0-9\\s]", "");
 				for (String word : tweet.split(" ")) {
-					// if length is not zero then word frequency is greater than 2
+					// if word vector is not null then word frequency is greater than 5
 					if (word2Vec.getWordVector(word) != null) {
 						words.add(word);
 					}
@@ -223,9 +227,14 @@ public class Vectorize {
 				// if words.size equals 0. Then the tweet is made up of words that are all
 				// different
 				if (words.size() > 0) {
-					INDArray wordVectors = word2Vec.getWordVectorsMean(words);
+
+					INDArray fin = word2Vec.getWordVectorMatrix(words.get(0));
+					for (int i = 1; i < words.size(); i++) {
+						fin.add(word2Vec.getWordVectorMatrix(words.get(i)));
+					}
 					words.clear();
-					String result = wordVectors.toString();
+					// INDArray wordVectors = word2Vec.getWordVectorsMean(words);
+					String result = fin.toString();
 					writer.write(result + "\n");
 				} else {
 					writer.write("NO SENTENCE VECTOR" + "\n");
@@ -265,7 +274,7 @@ public class Vectorize {
 			t.setTokenPreProcessor(new CommonPreprocessor());
 
 			log.info("Building model....");
-			Word2Vec vec = new Word2Vec.Builder().minWordFrequency(2).iterations(1).layerSize(100).seed(42)
+			Word2Vec vec = new Word2Vec.Builder().minWordFrequency(5).iterations(1).layerSize(100).seed(42)
 					.windowSize(5).iterate(iter).tokenizerFactory(t).build();
 
 			log.info("Fitting Word2Vec model....");
@@ -294,23 +303,6 @@ public class Vectorize {
 				sentiments.add(Integer.parseInt(nextRecord[0]));
 			}
 			return sentiments;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null; // return statement for compilation only
-	}
-
-	public List<String> getTweets(String csv_file_path) {
-		try {
-			System.out.println("Getting tweet labels from " + csv_file_path + " ...");
-			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csv_file_path), "utf-8"));
-			CSVReader csvReader = new CSVReader(reader);
-			String[] nextRecord;
-			List<String> tweets = new ArrayList<>();
-			while ((nextRecord = csvReader.readNext()) != null) {
-				tweets.add(nextRecord[1]);
-			}
-			return tweets;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
