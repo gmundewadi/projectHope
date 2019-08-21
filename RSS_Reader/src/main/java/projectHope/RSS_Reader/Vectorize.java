@@ -293,8 +293,15 @@ public class Vectorize {
 					for (int i = 1; i < words.size(); i++) {
 						double factor = 1.0;
 						String w = words.get(i);
+						// if the word is a stop word ignore it
 						if (stopwords.contains(w)) {
-							factor = 0.5;
+							factor = 0;
+						// if positive word increase its weight
+						} else if(positive.contains(w)) {
+							factor = 2;
+						// if negative word decrease its weight
+						} else if(negative.contains(w)) {
+							factor = .25;
 						}
 						fin.add(word2Vec.getWordVectorMatrix(words.get(i)).muli(factor));
 					}
