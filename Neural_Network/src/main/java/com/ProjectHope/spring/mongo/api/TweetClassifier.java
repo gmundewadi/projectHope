@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +51,8 @@ public class TweetClassifier {
 	private static Logger log = LoggerFactory.getLogger(TweetClassifier.class);
 
 	private static Map<Integer, String> classifiers;
-	
+
+	private static DecimalFormat df2 = new DecimalFormat("#.##");
 
 	public TweetClassifier() {
 		classifiers = new HashMap<>();
@@ -100,20 +102,14 @@ public class TweetClassifier {
 		int numHiddenNodes = 2;
 
 		log.info("Build model....");
-		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-			    .seed(seed)
-			    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-			    .updater(Updater.NESTEROVS)
-			    .list()
-			    .layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(numHiddenNodes)
-			            .weightInit(WeightInit.XAVIER)
-			            .activation(Activation.RELU)
-			            .build())
-			    .layer(1, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD)
-			            .weightInit(WeightInit.XAVIER)
-			            .activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER)
-			            .nIn(2).nOut(numOutputs).build())
-			    .build();
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed)
+				.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.NESTEROVS).list()
+				.layer(0,
+						new DenseLayer.Builder().nIn(numInputs).nOut(numHiddenNodes).weightInit(WeightInit.XAVIER)
+								.activation(Activation.RELU).build())
+				.layer(1, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD).weightInit(WeightInit.XAVIER)
+						.activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER).nIn(2).nOut(numOutputs).build())
+				.build();
 
 		// run the model
 		MultiLayerNetwork model = new MultiLayerNetwork(conf);
@@ -132,12 +128,13 @@ public class TweetClassifier {
 		log.info(eval.stats());
 
 		classify(output, tweets);
-		logTweets(tweets);
+		logTweets(output, tweets);
 
 	}
 
+	public static void logTweets(INDArray output, Map<Integer, Tweet> tweets) {
 
-	public static void logTweets(Map<Integer, Tweet> tweets) {
+		int tweetIndex = 0;
 		for (int key : tweets.keySet()) {
 			Tweet t = tweets.get(key);
 			String actual = "";
@@ -146,12 +143,15 @@ public class TweetClassifier {
 			} else {
 				actual = "negative";
 			}
-			if (actual.equals(t.getTweetClass())) {
-				System.out.println("predicted: " + t.getTweetClass() + " | actual: " + actual + " | ");
+			// only if prediction is innacurate, display information to the user
+			// as well as the margin of error
+			if (!actual.equals(t.getTweetClass())) {
+				float[] predictions = getFloatArrayFromSlice(output.slice(tweetIndex));
+				double marginOfError = getMarginOfError(predictions, actual);
+				System.out.println("predicted: " + t.getTweetClass() + " | actual: " + actual + " | MOE: " + df2.format(marginOfError*100));
 
-			} else {
-				System.out.println("predicted: " + t.getTweetClass() + " | actual: " + actual + " | innacurate");
 			}
+			tweetIndex++;
 
 		}
 	}
@@ -172,10 +172,10 @@ public class TweetClassifier {
 		for (int i = 0; i < tweets.rows(); i++) {
 			INDArray tweetSlice = tweets.slice(i);
 			INDArray sentimentSlice = sentiments.slice(i);
-			
+
 			float[] tweetArray = getFloatArrayFromSlice(tweetSlice);
 			int sentiment = sentimentSlice.getInt(1);
-			
+
 			Tweet t = new Tweet(sentiment, tweetArray);
 			iTweets.put(i, t);
 		}
@@ -187,11 +187,9 @@ public class TweetClassifier {
 			Tweet irs = tweets.get(i);
 			// set the classification from the fitted results
 			float[] predictions = getFloatArrayFromSlice(output.slice(i));
-			printArray(predictions);
-			irs.setTweetClass(classifiers.get(maxIndex(getFloatArrayFromSlice(output.slice(i)))));
+			irs.setTweetClass(classifiers.get(maxIndex(predictions)));
 		}
 	}
-	
 
 	private static float[] getFloatArrayFromSlice(INDArray rowSlice) {
 		float[] result = new float[rowSlice.columns()];
@@ -218,17 +216,19 @@ public class TweetClassifier {
 		}
 		System.out.println("\n");
 	}
-	
-	public Map<Integer,String> getTweets(String csv_file_path) {
+
+	// for future nlp use?
+	// Possible integreation with the stanford core NLP lib?
+	public Map<Integer, String> getTweets(String csv_file_path) {
 		try {
 			System.out.println("Getting tweet labels from " + csv_file_path + " ...");
 			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csv_file_path), "utf-8"));
 			CSVReader csvReader = new CSVReader(reader);
 			String[] nextRecord;
 			int index = 0;
-			Map<Integer,String> tweets = new HashMap<Integer,String>();
+			Map<Integer, String> tweets = new HashMap<Integer, String>();
 			while ((nextRecord = csvReader.readNext()) != null) {
-				tweets.put(index,nextRecord[1]);
+				tweets.put(index, nextRecord[1]);
 				index++;
 			}
 			return tweets;
@@ -238,5 +238,12 @@ public class TweetClassifier {
 		return null; // return statement for compilation only
 	}
 
-	
+	public static double getMarginOfError(float[] arr, String actual) {
+		int index = 0;
+		if (actual.equals("positive")) {
+			index = 1;
+		}
+		return Math.abs(.5 - arr[index]);
+	}
+
 }
