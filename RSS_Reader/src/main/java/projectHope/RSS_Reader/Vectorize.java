@@ -86,6 +86,8 @@ public class Vectorize {
 	private static int negativeDataSize = 200;
 	private static int positiveDataSize = 200;
 	private static Set<String> stopwords;
+	private static Set<String> positive;
+	private static Set<String> negative;
 
 	public static final String DATA_PATH = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),
 			"TRAINED_DATA_PATH");
@@ -93,6 +95,8 @@ public class Vectorize {
 	public static void main(String args[]) {
 		Vectorize v = new Vectorize();
 		loadStopWords();
+		loadPositiveWords();
+		loadNegativeWords();
 //		clearFiles();
 //		v.prepareTestData();
 //		v.prepareTrainData();
@@ -120,15 +124,50 @@ public class Vectorize {
 
 	public static void loadStopWords() {
 		try {
-			String filePath = Neural_Net_File_Path + "/stopwords.txt";
+			String filePath = Neural_Net_File_Path + "/key_words/stopwords.txt";
 			System.out.println("loading english stopwords from " + filePath + " into memory ...");
 			File file = new File(filePath);
 			Scanner sc = new Scanner(file);
 			stopwords = new HashSet<String>();
 			while (sc.hasNextLine()) {
 				String word = sc.nextLine();
-				System.out.println(word);
 				stopwords.add(word);
+			}
+			sc.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public static void loadPositiveWords() {
+		try {
+			String filePath = Neural_Net_File_Path + "/key_words/positive.txt";
+			System.out.println("loading positive english from " + filePath + " into memory ...");
+			File file = new File(filePath);
+			Scanner sc = new Scanner(file);
+			positive = new HashSet<String>();
+			while (sc.hasNextLine()) {
+				String word = sc.nextLine();
+				positive.add(word);
+			}
+			sc.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public static void loadNegativeWords() {
+		try {
+			String filePath = Neural_Net_File_Path + "/key_words/negative.txt";
+			System.out.println("loading negative english from " + filePath + " into memory ...");
+			File file = new File(filePath);
+			Scanner sc = new Scanner(file);
+			negative = new HashSet<String>();
+			while (sc.hasNextLine()) {
+				String word = sc.nextLine();
+				negative.add(word);
 			}
 			sc.close();
 		} catch (FileNotFoundException e) {
@@ -254,10 +293,10 @@ public class Vectorize {
 					for (int i = 1; i < words.size(); i++) {
 						double factor = 1.0;
 						String w = words.get(i);
-						if(stopwords.contains(w)) {
+						if (stopwords.contains(w)) {
 							factor = 0.5;
 						}
-						fin.add(word2Vec.getWordVectorMatrix(words.get(i)).div(1.0));
+						fin.add(word2Vec.getWordVectorMatrix(words.get(i)).muli(factor));
 					}
 					words.clear();
 					// INDArray wordVectors = word2Vec.getWordVectorsMean(words);
