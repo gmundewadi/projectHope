@@ -98,15 +98,15 @@ public class Vectorize {
 		loadPositiveWords();
 		loadNegativeWords();
 //		clearFiles();
-//		v.prepareTestData();
-//		v.prepareTrainData();
+		v.prepareTestData();
+		v.prepareTrainData();
 
 	}
 
 	public void prepareTrainData() {
 		System.out.println("+==========PREPARING TRAIN DATA==========+");
-		csvReader(Neural_Net_File_Path + "/train/data.csv");
-		wordToVec(Neural_Net_File_Path + "/train/words.txt");
+//		csvReader(Neural_Net_File_Path + "/train/data.csv");
+//		wordToVec(Neural_Net_File_Path + "/train/words.txt");
 		sentenceToVec(Neural_Net_File_Path + "/train/word_vectors.txt");
 		csvWriter(Neural_Net_File_Path + "/train/results.csv");
 		System.out.println("+==========TRAIN/results.csv prepared==========+");
@@ -115,8 +115,8 @@ public class Vectorize {
 
 	public void prepareTestData() {
 		System.out.println("+==========PREPARING TEST DATA==========+");
-		csvReader(Neural_Net_File_Path + "/test/data.csv");
-		wordToVec(Neural_Net_File_Path + "/test/words.txt");
+//		csvReader(Neural_Net_File_Path + "/test/data.csv");
+//		wordToVec(Neural_Net_File_Path + "/test/words.txt");
 		sentenceToVec(Neural_Net_File_Path + "/test/word_vectors.txt");
 		csvWriter(Neural_Net_File_Path + "/test/results.csv");
 		System.out.println("+==========TEST/results.csv prepared==========+");
@@ -177,7 +177,7 @@ public class Vectorize {
 	}
 
 	public void csvWriter(String csv_file_path) {
-		System.out.println("Writing Neural Network friendly code to " + csv_file_path + " ... ");
+		System.out.println("Writing Neural Network friendly data to " + csv_file_path + " ... ");
 		String sentenceFileToRead = "";
 		String csvFileToRead = "";
 		if (csv_file_path.contains("train")) {
@@ -278,36 +278,30 @@ public class Vectorize {
 			Scanner sc = new Scanner(file);
 			ArrayList<String> words = new ArrayList<>();
 			while (sc.hasNextLine()) {
+				double factor = 1.0;
 				String tweet = sc.nextLine().replaceAll("[^a-zA-Z0-9\\s]", "").toLowerCase();
 				for (String word : tweet.split(" ")) {
 					// if word vector is not null then word frequency is greater than 5
-					if (word2Vec.getWordVector(word) != null) {
-						words.add(word);
+					// OR if word is a stopword.
+					if (word2Vec.getWordVector(word) == null || stopwords.contains(word)) {
+						continue;
+					}	
+					words.add(word);
+					// if word is positive increase its weight
+					if (positive.contains(word)) {
+						factor += .05;
+					}
+					// if word is negative decrease its weight
+					if (negative.contains(word)) {
+						factor -= .05;
 					}
 				}
-				// if words.size equals 0. Then the tweet is made up of words that are all
-				// different
+				// if words size is 0, tweet is made up of words that have frequency < 5 each
 				if (words.size() > 0) {
-
-					INDArray fin = word2Vec.getWordVectorMatrix(words.get(0));
-					for (int i = 1; i < words.size(); i++) {
-						double factor = 1.0;
-						String w = words.get(i);
-						// if the word is a stop word ignore it
-						if (stopwords.contains(w)) {
-							factor = 0;
-						// if positive word increase its weight
-						} else if(positive.contains(w)) {
-							factor = 2;
-						// if negative word decrease its weight
-						} else if(negative.contains(w)) {
-							factor = .25;
-						}
-						fin.add(word2Vec.getWordVectorMatrix(words.get(i)).muli(factor));
-					}
+					INDArray wordVectors = word2Vec.getWordVectorsMean(words);
 					words.clear();
-					// INDArray wordVectors = word2Vec.getWordVectorsMean(words);
-					String result = fin.toString();
+					// factor will represent a bag of words prediction of sentiment
+					String result = wordVectors.toString() + "," + factor;
 					writer.write(result + "\n");
 				} else {
 					writer.write("NO SENTENCE VECTOR" + "\n");

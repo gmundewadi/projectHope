@@ -64,14 +64,14 @@ public class TweetClassifier {
 
 		// Second: the RecordReaderDataSetIterator handles conversion to DataSet
 		// objects, ready for use in neural network
-		int labelIndex = 100; // 101 values in each row of the results.csv CSV: 100 input features followed by
+		int labelIndex = 101; // 102 values in each row of the results.csv CSV: 101 input features followed by
 								// an
-								// integer label (class) index. Labels are the 101th value (index 100) in each
+								// integer label (class) index. Labels are the 102th value (index 101) in each
 								// row
 		int numClasses = 2; // 2 classes (types of tweet) in the results.csv data set. Classes have integer
 							// values 0 or 1
 
-		int batchSizeTraining = 200; // Tweets training data set: 100000+ examples total.
+		int batchSizeTraining = 400; // Tweets training data set: 100000+ examples total.
 		DataSet trainingData = readCSVDataset(twitterDataTrainFile, batchSizeTraining, labelIndex, numClasses);
 
 		// this is the data we want to classify
@@ -93,7 +93,7 @@ public class TweetClassifier {
 										// from the *training* set
 
 		// Configure neural network
-		final int numInputs = 100;
+		final int numInputs = 101;
 		int numOutputs = 2;
 		int epochs = 1000;
 		long seed = 6;
