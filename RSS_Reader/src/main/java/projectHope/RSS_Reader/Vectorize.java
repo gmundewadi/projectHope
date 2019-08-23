@@ -89,6 +89,7 @@ public class Vectorize {
 	private static Set<String> positive;
 	private static Set<String> negative;
 
+
 	public static final String DATA_PATH = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),
 			"TRAINED_DATA_PATH");
 
@@ -97,9 +98,9 @@ public class Vectorize {
 		loadStopWords();
 		loadPositiveWords();
 		loadNegativeWords();
-//		clearFiles();
+		//clearFiles();
 		v.prepareTestData();
-		v.prepareTrainData();
+		//v.prepareTrainData();
 
 	}
 
@@ -298,11 +299,29 @@ public class Vectorize {
 				}
 				// if words size is 0, tweet is made up of words that have frequency < 5 each
 				if (words.size() > 0) {
+
+					
+					
+					SentimentAnalyzer sentimentAnalyzer = new SentimentAnalyzer();
+					sentimentAnalyzer.initialize();
+					SentimentResult sentimentResult = sentimentAnalyzer.getSentimentResult(tweet);
+
+					System.out.println("Sentiment Score: " + sentimentResult.getSentimentScore());
+					//System.out.println("Sentiment Type: " + sentimentResult.getSentimentType());
+					System.out.println("Very positive: " + sentimentResult.getSentimentClass().getVeryPositive()+"%");
+					System.out.println("Positive: " + sentimentResult.getSentimentClass().getPositive()+"%");
+					System.out.println("Neutral: " + sentimentResult.getSentimentClass().getNeutral()+"%");
+					System.out.println("Negative: " + sentimentResult.getSentimentClass().getNegative()+"%");
+					System.out.println("Very negative: " + sentimentResult.getSentimentClass().getVeryNegative()+"%");
+					
+					
+					
 					INDArray wordVectors = word2Vec.getWordVectorsMean(words);
 					words.clear();
 					// factor will represent a bag of words prediction of sentiment
 					String result = wordVectors.toString() + "," + factor;
 					writer.write(result + "\n");
+					
 				} else {
 					writer.write("NO SENTENCE VECTOR" + "\n");
 				}

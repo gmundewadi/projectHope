@@ -148,7 +148,8 @@ public class TweetClassifier {
 			if (!actual.equals(t.getTweetClass())) {
 				float[] predictions = getFloatArrayFromSlice(output.slice(tweetIndex));
 				double marginOfError = getMarginOfError(predictions, actual);
-				System.out.println("predicted: " + t.getTweetClass() + " | actual: " + actual + " | MOE: " + df2.format(marginOfError*100));
+				System.out.println("predicted: " + t.getTweetClass() + " | actual: " + actual + " | MOE : "
+						+ df2.format(marginOfError * 100) + "%");
 
 			}
 			tweetIndex++;
