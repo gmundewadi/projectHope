@@ -12,7 +12,9 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,7 +50,9 @@ import org.deeplearning4j.iterator.LabeledSentenceProvider;
 import org.deeplearning4j.iterator.provider.FileLabeledSentenceProvider;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
+import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -88,7 +92,7 @@ public class Vectorize {
 	private static Set<String> stopwords;
 	private static Set<String> positive;
 	private static Set<String> negative;
-
+	private static DecimalFormat df2 = new DecimalFormat("#.##");
 
 	public static final String DATA_PATH = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),
 			"TRAINED_DATA_PATH");
@@ -100,7 +104,7 @@ public class Vectorize {
 		loadNegativeWords();
 		//clearFiles();
 		v.prepareTestData();
-		//v.prepareTrainData();
+		v.prepareTrainData();
 
 	}
 
@@ -191,38 +195,40 @@ public class Vectorize {
 		try {
 			CSVWriter writer = new CSVWriter(new FileWriter(csv_file_path));
 			// Create record
-			int tweetIndex = 0;
-			List<Integer> sentiments = getSentiments(csvFileToRead);
 			List<String[]> results = new ArrayList<String[]>();
 			File file = new File(sentenceFileToRead);
 			Scanner sc = new Scanner(file);
 			int positives = 0;
 			int negatives = 0;
-			while (sc.hasNext() && tweetIndex < sentiments.size()) {
+			while (sc.hasNext()) {
 				String s = sc.nextLine();
-				if (s.contains("NO SENTENCE VECTOR") || sentiments.get(tweetIndex) == 2) {
-					tweetIndex++;
+
+				if (s.contains("NO SENTENCE VECTOR")) {
 					continue;
 				} else {
 					s = s.replaceAll("\\[|\\]", "");
-					int sentiment = sentiments.get(tweetIndex);
+					String[] partsOfTweet = s.split(",");
+					int length = partsOfTweet.length;
+					int sentiment = Integer.parseInt(partsOfTweet[length - 1]);
+					if (sentiment == 2) {
+						continue;
+					}
+					double factor = Double.parseDouble(partsOfTweet[length - 2]);
 					// this if statement ensures that the training data remains
 					// evenly split between negative and positive news
+					if (negatives >= negativeDataSize && positives >= positiveDataSize) {
+						break;
+					}
 					if (negatives >= negativeDataSize && sentiment == 0
 							|| positives >= positiveDataSize && sentiment == 4) {
-						tweetIndex++;
 						continue;
 					} else if (sentiment == 4) {
 						positives++;
-						sentiment = 1;
+						partsOfTweet[length-1] = "1";
 					} else if (sentiment == 0) {
 						negatives++;
 					}
-					// add comma so that split occurs correctly
-					String recordString = s + "," + sentiment;
-					tweetIndex++;
-					String[] record = recordString.split(",");
-					results.add(record);
+					results.add(partsOfTweet);
 				}
 			}
 			Collections.shuffle(results);
@@ -242,6 +248,7 @@ public class Vectorize {
 		try {
 			System.out.println("Reading data.csv file from " + csv_file_path + " ... ");
 			String fileToWrite = "";
+			ArrayList<String> lines = new ArrayList<String>();
 			if (csv_file_path.contains("train")) {
 				fileToWrite = Neural_Net_File_Path + "/train/words.txt";
 			} else {
@@ -252,9 +259,21 @@ public class Vectorize {
 			String[] nextRecord;
 			BufferedWriter writer = new BufferedWriter(new FileWriter(fileToWrite));
 			while ((nextRecord = csvReader.readNext()) != null) {
+				int sentiment = Integer.parseInt(nextRecord[0]);
 				String tweet = nextRecord[1].replaceAll("[^a-zA-Z0-9\\s]", "");
-				writer.write(tweet + "\n");
+				lines.add(tweet + "," + sentiment + "\n");
 			}
+			Collections.shuffle(lines);
+
+			// edit size variable to avoid index out of bounds
+			int size = lines.size();
+			if (size > 1000) {
+				size = 1000;
+			}
+			for (int i = 0; i < size; i++) {
+				writer.write(lines.get(i));
+			}
+
 			writer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -263,7 +282,8 @@ public class Vectorize {
 
 	public void sentenceToVec(String word_vector_file_path) {
 		try {
-			System.out.println("Vectorizing sentences using" + word_vector_file_path + " word2vec model ... ");
+			SentimentAnalyzer sentimentAnalyzer = new SentimentAnalyzer();
+			sentimentAnalyzer.initialize();
 			String fileToWrite = "";
 			String fileToRead = "";
 			if (word_vector_file_path.contains("train")) {
@@ -273,24 +293,38 @@ public class Vectorize {
 				fileToWrite = Neural_Net_File_Path + "/test/sentence_vectors.txt";
 				fileToRead = Neural_Net_File_Path + "/test/words.txt";
 			}
+			System.out.println("Reading word vector model from " + word_vector_file_path + " ... ");
 			Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel(word_vector_file_path);
+			VocabCache<VocabWord> cache = word2Vec.getVocab();
+			double index = 0;
 			BufferedWriter writer = new BufferedWriter(new FileWriter(fileToWrite));
 			File file = new File(fileToRead);
 			Scanner sc = new Scanner(file);
+
+			Path path = Paths.get(fileToRead);
+			long size = Files.lines(path).count();
+
+			StringBuilder sb = new StringBuilder();
 			ArrayList<String> words = new ArrayList<>();
+			System.out.println("Vectorizing sentences using" + word_vector_file_path + " word2vec model ... ");
 			while (sc.hasNextLine()) {
 				double factor = 1.0;
-				String tweet = sc.nextLine().replaceAll("[^a-zA-Z0-9\\s]", "").toLowerCase();
+				String entireLine = sc.nextLine();
+				String[] parts = entireLine.split(",");
+				int sentimentLabel = Integer.parseInt(parts[1]);
+				String tweet = parts[0].replaceAll("[^a-zA-Z0-9\\s]", "").toLowerCase();
 				for (String word : tweet.split(" ")) {
 					// if word vector is not null then word frequency is greater than 5
 					// OR if word is a stopword.
-					if (word2Vec.getWordVector(word) == null || stopwords.contains(word)) {
+					// OR if word is not part of word2Vec word cache
+					if (word2Vec.getWordVector(word) == null || stopwords.contains(word) || !cache.containsWord(word)) {
 						continue;
-					}	
+					}
 					words.add(word);
+					sb.append(word + " ");
 					// if word is positive increase its weight
 					if (positive.contains(word)) {
-						factor += .05;
+						factor += .2;
 					}
 					// if word is negative decrease its weight
 					if (negative.contains(word)) {
@@ -300,32 +334,55 @@ public class Vectorize {
 				// if words size is 0, tweet is made up of words that have frequency < 5 each
 				if (words.size() > 0) {
 
-					
-					
-					SentimentAnalyzer sentimentAnalyzer = new SentimentAnalyzer();
-					sentimentAnalyzer.initialize();
-					SentimentResult sentimentResult = sentimentAnalyzer.getSentimentResult(tweet);
+					/*
+					 * "Very negative" = 0 "Negative" = 1 "Neutral" = 2 "Positive" = 3
+					 * "Very positive" = 4
+					 */
 
-					System.out.println("Sentiment Score: " + sentimentResult.getSentimentScore());
-					//System.out.println("Sentiment Type: " + sentimentResult.getSentimentType());
-					System.out.println("Very positive: " + sentimentResult.getSentimentClass().getVeryPositive()+"%");
-					System.out.println("Positive: " + sentimentResult.getSentimentClass().getPositive()+"%");
-					System.out.println("Neutral: " + sentimentResult.getSentimentClass().getNeutral()+"%");
-					System.out.println("Negative: " + sentimentResult.getSentimentClass().getNegative()+"%");
-					System.out.println("Very negative: " + sentimentResult.getSentimentClass().getVeryNegative()+"%");
-					
-					
-					
+					SentimentResult sentimentResult = sentimentAnalyzer.getSentimentResult(sb.toString().trim());
+					sb.setLength(0);
+					double sentimentNLP = sentimentResult.getSentimentScore();
+					double positive = sentimentResult.getSentimentClass().getPositive() / 100;
+					double negative = sentimentResult.getSentimentClass().getNegative() / 100;
+
+					double veryPositive = sentimentResult.getSentimentClass().getVeryPositive() / 100;
+					double veryNegative = sentimentResult.getSentimentClass().getVeryNegative() / 100;
+
+					factor += positive;
+					factor += (veryPositive * 1.05);
+
+					factor -= negative;
+					factor -= (veryNegative * 1.05);
+
+					if (sentimentNLP == 0.0) {
+						factor -= .1;
+					} else if (sentimentNLP == 1.0) {
+						factor -= .05;
+					} else if (sentimentNLP == 3.0) {
+						factor += .1;
+					} else if (sentimentNLP == 4.0) {
+						factor += .2;
+					}
+
+					// how to get neutral sentiment analysis
+					// sentimentResult.getSentimentClass().getNeutral();
+
 					INDArray wordVectors = word2Vec.getWordVectorsMean(words);
 					words.clear();
 					// factor will represent a bag of words prediction of sentiment
-					String result = wordVectors.toString() + "," + factor;
+					wordVectors = wordVectors.mul(factor);
+					String result = wordVectors.toString() + "," + factor + "," + sentimentLabel;
 					writer.write(result + "\n");
-					
+					index++;
+					if (index % 100 == 0) {
+						System.out.println(df2.format((index / size) * 100) + " %");
+					}
+
 				} else {
 					writer.write("NO SENTENCE VECTOR" + "\n");
 				}
 			}
+			System.out.println("100% COMPLETE");
 			sc.close();
 			writer.close();
 		} catch (IOException e) {

@@ -4,7 +4,6 @@ import java.util.Properties;
 
 import org.ejml.simple.SimpleMatrix;
 
-
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.neural.rnn.RNNCoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
@@ -22,21 +21,23 @@ public class SentimentAnalyzer {
 
 	static Properties props;
 	static StanfordCoreNLP pipeline;
+	public static SentimentResult sentimentResult;
+	public static SentimentClassification sentimentClass;
 
 	public void initialize() {
-		 // creates a StanfordCoreNLP object, with POS tagging, lemmatization, NER, parsing, and sentiment
+		// creates a StanfordCoreNLP object, with POS tagging, lemmatization, NER,
+		// parsing, and sentiment
 		props = new Properties();
 		props.setProperty("annotators", "tokenize, ssplit, parse, sentiment");
 		pipeline = new StanfordCoreNLP(props);
+		sentimentResult = new SentimentResult();
+		sentimentClass = new SentimentClassification();
 	}
 
 	public SentimentResult getSentimentResult(String text) {
 
-		SentimentResult sentimentResult = new SentimentResult();
-		SentimentClassification sentimentClass = new SentimentClassification();
-
 		if (text != null && text.length() > 0) {
-			
+
 			// run all Annotators on the text
 			Annotation annotation = pipeline.process(text);
 
@@ -46,12 +47,12 @@ public class SentimentAnalyzer {
 				SimpleMatrix sm = RNNCoreAnnotations.getPredictions(tree);
 				String sentimentType = sentence.get(SentimentCoreAnnotations.SentimentClass.class);
 
-				sentimentClass.setVeryPositive((double)Math.round(sm.get(4) * 100d));
-				sentimentClass.setPositive((double)Math.round(sm.get(3) * 100d));
-				sentimentClass.setNeutral((double)Math.round(sm.get(2) * 100d));
-				sentimentClass.setNegative((double)Math.round(sm.get(1) * 100d));
-				sentimentClass.setVeryNegative((double)Math.round(sm.get(0) * 100d));
-				
+				sentimentClass.setVeryPositive((double) Math.round(sm.get(4) * 100d));
+				sentimentClass.setPositive((double) Math.round(sm.get(3) * 100d));
+				sentimentClass.setNeutral((double) Math.round(sm.get(2) * 100d));
+				sentimentClass.setNegative((double) Math.round(sm.get(1) * 100d));
+				sentimentClass.setVeryNegative((double) Math.round(sm.get(0) * 100d));
+
 				sentimentResult.setSentimentScore(RNNCoreAnnotations.getPredictedClass(tree));
 				sentimentResult.setSentimentType(sentimentType);
 				sentimentResult.setSentimentClass(sentimentClass);
@@ -59,8 +60,7 @@ public class SentimentAnalyzer {
 
 		}
 
-
 		return sentimentResult;
 	}
-	
+
 }
