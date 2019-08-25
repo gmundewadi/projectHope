@@ -8,13 +8,23 @@ public class Tweet {
 
 	private int sentiment; // 0 is negative. 4 is positive
 	private float[] tweetVector; // sentence to vector representation of tweet
+	private double factor; // multiplication factor determined by stanford NLP library
 
 	private String tweetClass;
 
-	public Tweet(int sentiment, float[] tweetVector) {
+	public Tweet(int sentiment, float[] tweetVector, double factor) {
 		super();
 		this.sentiment = sentiment;
 		this.tweetVector = tweetVector;
+		this.factor = factor;
+	}
+
+	public double getFactor() {
+		return factor;
+	}
+
+	public void setFactor(double factor) {
+		this.factor = factor;
 	}
 
 	public int getSentiment() {
@@ -43,8 +53,8 @@ public class Tweet {
 
 	@Override
 	public String toString() {
-		return "Tweet [sentiment=" + sentiment + ", tweetVector=" + Arrays.toString(tweetVector) + ", tweetClass="
-				+ tweetClass + "]";
+		return "Tweet [sentiment=" + sentiment + ", tweetVector=" + Arrays.toString(tweetVector) + ", factor=" + factor
+				+ ", tweetClass=" + tweetClass + "]";
 	}
 
 }

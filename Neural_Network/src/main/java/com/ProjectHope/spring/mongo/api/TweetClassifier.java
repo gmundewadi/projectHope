@@ -149,7 +149,8 @@ public class TweetClassifier {
 				float[] predictions = getFloatArrayFromSlice(output.slice(tweetIndex));
 				double marginOfError = getMarginOfError(predictions, actual);
 				System.out.println("predicted: " + t.getTweetClass() + " | actual: " + actual + " | MOE : "
-						+ df2.format(marginOfError * 100) + "%");
+						+ df2.format(marginOfError * 100) + "%" + " | predictions: " + printArray(predictions)
+						+ " | factor: " + t.getFactor());
 
 			}
 			tweetIndex++;
@@ -177,7 +178,7 @@ public class TweetClassifier {
 			float[] tweetArray = getFloatArrayFromSlice(tweetSlice);
 			int sentiment = sentimentSlice.getInt(1);
 
-			Tweet t = new Tweet(sentiment, tweetArray);
+			Tweet t = new Tweet(sentiment, tweetArray, tweetArray[tweetArray.length - 1]);
 			iTweets.put(i, t);
 		}
 		return iTweets;
@@ -188,6 +189,12 @@ public class TweetClassifier {
 			Tweet irs = tweets.get(i);
 			// set the classification from the fitted results
 			float[] predictions = getFloatArrayFromSlice(output.slice(i));
+			// multiplication factor from stanford NLP and keyword search
+			// used to refine neural network results
+			double factor = irs.getFactor();
+			predictions[1] = (float) (predictions[1] + (factor * 2));
+			predictions[0] = (float) (predictions[0] - (factor * 2));
+
 			irs.setTweetClass(classifiers.get(maxIndex(predictions)));
 		}
 	}
@@ -211,11 +218,12 @@ public class TweetClassifier {
 		return maxIndex;
 	}
 
-	public void printArray(float[] arr) {
+	public static String printArray(float[] arr) {
+		String result = "";
 		for (float f : arr) {
-			System.out.print(f + " ");
+			result += f + " ";
 		}
-		System.out.println("\n");
+		return result;
 	}
 
 	// for future nlp use?
