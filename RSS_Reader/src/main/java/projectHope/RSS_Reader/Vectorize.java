@@ -432,9 +432,8 @@ public class Vectorize {
 					INDArray wordVectors = word2Vec.getWordVectorsMean(words);
 					words.clear();
 					
-					Number mean = wordVectors.ameanNumber();
 
-					String result = wordVectors.ameanNumber().toString() + "," + keywordFactor + "," + nlpFactor + ","
+					String result = wordVectors.toString() + "," + keywordFactor + "," + nlpFactor + ","
 							+ sentimentLabel;
 					writer.write(result + "\n");
 					index++;
