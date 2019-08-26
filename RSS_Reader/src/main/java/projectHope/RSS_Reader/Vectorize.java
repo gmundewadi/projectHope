@@ -76,6 +76,10 @@ import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -89,8 +93,8 @@ public class Vectorize {
 
 	private static Logger log = LoggerFactory.getLogger(Vectorize.class);
 	private static String Neural_Net_File_Path = "../Neural_Network/src/main/resources/datasets";
-	private static int negativeDataSize = 200;
-	private static int positiveDataSize = 200;
+	private static int negativeDataSize = 500;
+	private static int positiveDataSize = 500;
 	private static Set<String> stopwords;
 	private static Set<String> positive;
 	private static Set<String> negative;
@@ -122,11 +126,61 @@ public class Vectorize {
 
 	public void prepareTestData() {
 		System.out.println("+==========PREPARING TEST DATA==========+");
+		readJSON(Neural_Net_File_Path + "/test/UpliftingNews.txt");
 		csvReader(Neural_Net_File_Path + "/test/data.csv");
 		wordToVec(Neural_Net_File_Path + "/test/words.txt");
 		sentenceToVec(Neural_Net_File_Path + "/test/word_vectors.txt");
 		csvWriter(Neural_Net_File_Path + "/test/results.csv");
 		System.out.println("+==========TEST/results.csv prepared==========+");
+	}
+
+	// this method is temporary
+	public void readJSON(String json_file_path) {
+		try {
+			File file = new File(json_file_path);
+			Scanner sc = new Scanner(file);
+			JSONParser parser = new JSONParser();
+			CSVWriter writer = new CSVWriter(new FileWriter(Neural_Net_File_Path + "/test/data.csv"));
+			List<String[]> results = new ArrayList<String[]>();
+			while (sc.hasNextLine()) {
+				String word = sc.nextLine();
+				int endContentIndex = word.indexOf("\",\"");
+				String content = word.substring(13, endContentIndex).replaceAll("[^a-zA-Z0-9\\s]", "");
+
+				int startLabelIndex = word.indexOf(",\"label\":");
+				if (startLabelIndex == -1) {
+					startLabelIndex = word.indexOf(",\"labels\":");
+				}
+				if (startLabelIndex == -1) {
+					continue;
+				}
+				String label = word.substring(startLabelIndex);
+				int endLabelIndex = label.indexOf("\"]},");
+				label = label.substring(11, endLabelIndex);
+				int sentiment = Integer.parseInt(label);
+				if (sentiment == 0) {
+					continue;
+				} else if (sentiment > 0) {
+					sentiment = 1;
+				} else if (sentiment < 0) {
+					sentiment = 0;
+				}
+				String[] parts = (sentiment + "," + content).split(",");
+				results.add(parts);
+
+			}
+			for (String[] r : results) {
+				writer.writeNext(r);
+			}
+			writer.close();
+			sc.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	public static void loadStopWords() {
@@ -263,13 +317,17 @@ public class Vectorize {
 			while ((nextRecord = csvReader.readNext()) != null) {
 				int sentiment = Integer.parseInt(nextRecord[0]);
 				String tweet = nextRecord[1].replaceAll("[^a-zA-Z0-9\\s]", "");
+				// String s performs normalization on input text:
+				// For example: playing, played, etc now become play
+				tweet = Normalizer.normalize(tweet, Form.NFD);
+				tweet = tweet.replaceAll("[^\\p{ASCII}]", "");
 				lines.add(tweet + "," + sentiment + "\n");
 			}
 			Collections.shuffle(lines);
 
 			// edit size variable to avoid index out of bounds
 			int size = lines.size();
-			if (size > 1000) {
+			if (size > 2000) {
 				size = 1000;
 			}
 			for (int i = 0; i < size; i++) {
@@ -310,7 +368,8 @@ public class Vectorize {
 			ArrayList<String> words = new ArrayList<>();
 			System.out.println("Vectorizing sentences using" + word_vector_file_path + " word2vec model ... ");
 			while (sc.hasNextLine()) {
-				double factor = 0.0;
+				double nlpFactor = 0.0;
+				double keywordFactor = 0.0;
 				String entireLine = sc.nextLine();
 				String[] parts = entireLine.split(",");
 				int sentimentLabel = Integer.parseInt(parts[1]);
@@ -326,11 +385,11 @@ public class Vectorize {
 					sb.append(word + " ");
 					// if word is positive increase its weight
 					if (positive.contains(word)) {
-						factor += .05;
+						keywordFactor += .05;
 					}
 					// if word is negative decrease its weight
 					if (negative.contains(word)) {
-						factor -= .05;
+						keywordFactor -= .05;
 					}
 				}
 				// if words size is 0, tweet is made up of words that have frequency < 5 each
@@ -342,34 +401,29 @@ public class Vectorize {
 					 */
 					String s = sb.toString().trim();
 
-					// String s performs normalization on input text:
-					// For example: playing, played, etc now become play
-					s = Normalizer.normalize(s, Form.NFD);
-					s = s.replaceAll("[^\\p{ASCII}]", "");
 					SentimentResult sentimentResult = sentimentAnalyzer.getSentimentResult(s);
 					sb.setLength(0);
 					double sentimentNLP = sentimentResult.getSentimentScore();
 					double positive = sentimentResult.getSentimentClass().getPositive() / 100;
 					double negative = sentimentResult.getSentimentClass().getNegative() / 100;
 
-//					double veryPositive = sentimentResult.getSentimentClass().getVeryPositive() / 100;
-//					double veryNegative = sentimentResult.getSentimentClass().getVeryNegative() / 100;
-//					
+					double veryPositive = sentimentResult.getSentimentClass().getVeryPositive() / 100;
+					double veryNegative = sentimentResult.getSentimentClass().getVeryNegative() / 100;
 
-					factor += positive;
-//					factor += (veryPositive * 1.05);
+					nlpFactor += positive;
+					nlpFactor += (veryPositive * 1.25);
 
-					factor -= negative;
-//					factor -= (veryNegative * 1.05);
+					nlpFactor -= negative;
+					nlpFactor -= (veryNegative * 1.25);
 
 					if (sentimentNLP == 0.0) {
-						factor -= .1;
+						nlpFactor -= .1;
 					} else if (sentimentNLP == 1.0) {
-						factor -= .05;
+						nlpFactor -= .05;
 					} else if (sentimentNLP == 3.0) {
-						factor += .1;
+						nlpFactor += .1;
 					} else if (sentimentNLP == 4.0) {
-						factor += .05;
+						nlpFactor += .05;
 					}
 
 					// how to get neutral sentiment analysis
@@ -377,9 +431,11 @@ public class Vectorize {
 
 					INDArray wordVectors = word2Vec.getWordVectorsMean(words);
 					words.clear();
-					// factor will represent a bag of words prediction of sentiment
-					// wordVectors = wordVectors.mul(factor);
-					String result = wordVectors.toString() + "," + factor + "," + sentimentLabel;
+					
+					Number mean = wordVectors.ameanNumber();
+
+					String result = wordVectors.ameanNumber().toString() + "," + keywordFactor + "," + nlpFactor + ","
+							+ sentimentLabel;
 					writer.write(result + "\n");
 					index++;
 					if (index % 100 == 0) {

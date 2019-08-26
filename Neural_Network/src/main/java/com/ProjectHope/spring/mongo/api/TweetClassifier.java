@@ -66,10 +66,10 @@ public class TweetClassifier {
 
 		// Second: the RecordReaderDataSetIterator handles conversion to DataSet
 		// objects, ready for use in neural network
-		int labelIndex = 101; // 102 values in each row of the results.csv CSV: 101 input features followed by
-								// an
-								// integer label (class) index. Labels are the 102th value (index 101) in each
-								// row
+		int labelIndex = 3; // 10 values in each row of the results.csv CSV: 101 input features followed by
+							// an
+							// integer label (class) index. Labels are the 102th value (index 101) in each
+							// row
 		int numClasses = 2; // 2 classes (types of tweet) in the results.csv data set. Classes have integer
 							// values 0 or 1
 
@@ -95,7 +95,7 @@ public class TweetClassifier {
 										// from the *training* set
 
 		// Configure neural network
-		final int numInputs = 101;
+		final int numInputs = 3;
 		int numOutputs = 2;
 		int epochs = 1000;
 		long seed = 6;
@@ -150,7 +150,7 @@ public class TweetClassifier {
 				double marginOfError = getMarginOfError(predictions, actual);
 				System.out.println("predicted: " + t.getTweetClass() + " | actual: " + actual + " | MOE : "
 						+ df2.format(marginOfError * 100) + "%" + " | predictions: " + printArray(predictions)
-						+ " | factor: " + t.getFactor());
+						+ " | nlpFactor: " + t.getNlpFactor() + "| " + t.getKeywordFactor());
 
 			}
 			tweetIndex++;
@@ -176,9 +176,10 @@ public class TweetClassifier {
 			INDArray sentimentSlice = sentiments.slice(i);
 
 			float[] tweetArray = getFloatArrayFromSlice(tweetSlice);
+			int size = tweetArray.length;
 			int sentiment = sentimentSlice.getInt(1);
 
-			Tweet t = new Tweet(sentiment, tweetArray, tweetArray[tweetArray.length - 1]);
+			Tweet t = new Tweet(sentiment, tweetArray, tweetArray[size - 2], tweetArray[size - 1]);
 			iTweets.put(i, t);
 		}
 		return iTweets;
@@ -191,9 +192,25 @@ public class TweetClassifier {
 			float[] predictions = getFloatArrayFromSlice(output.slice(i));
 			// multiplication factor from stanford NLP and keyword search
 			// used to refine neural network results
-			double factor = irs.getFactor();
-			predictions[1] = (float) (predictions[1] + (factor * 2));
-			predictions[0] = (float) (predictions[0] - (factor * 2));
+			float nlpFactor = 1 + irs.getNlpFactor();
+			float keywordFactor = 1 + irs.getKeywordFactor();
+			if (nlpFactor > 0) {
+				predictions[1] = (float) (predictions[1] + (nlpFactor * 5));
+				predictions[0] = (float) (predictions[0] - (nlpFactor * 5));
+
+			} else {
+				predictions[1] = (float) (predictions[1] + (nlpFactor * 5));
+				predictions[0] = (float) (predictions[0] - (nlpFactor * 5));
+			}
+
+			if (keywordFactor > 0) {
+				predictions[1] = (float) (predictions[1] + (keywordFactor));
+				predictions[0] = (float) (predictions[0] - (keywordFactor));
+
+			} else {
+				predictions[1] = (float) (predictions[1] + (keywordFactor));
+				predictions[0] = (float) (predictions[0] - (keywordFactor));
+			}
 
 			irs.setTweetClass(classifiers.get(maxIndex(predictions)));
 		}
