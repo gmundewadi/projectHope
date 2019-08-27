@@ -11,6 +11,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -86,6 +90,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,7 +113,7 @@ public class Vectorize {
 		loadStopWords();
 		loadPositiveWords();
 		loadNegativeWords();
-		clearFiles();
+		//clearFiles();
 		v.prepareTestData();
 		v.prepareTrainData();
 
@@ -116,8 +121,8 @@ public class Vectorize {
 
 	public void prepareTrainData() {
 		System.out.println("+==========PREPARING TRAIN DATA==========+");
-		csvReader(Neural_Net_File_Path + "/train/data.csv");
-		wordToVec(Neural_Net_File_Path + "/train/words.txt");
+//		csvReader(Neural_Net_File_Path + "/train/data.csv");
+//		wordToVec(Neural_Net_File_Path + "/train/words.txt");
 		sentenceToVec(Neural_Net_File_Path + "/train/word_vectors.txt");
 		csvWriter(Neural_Net_File_Path + "/train/results.csv");
 		System.out.println("+==========TRAIN/results.csv prepared==========+");
@@ -126,9 +131,9 @@ public class Vectorize {
 
 	public void prepareTestData() {
 		System.out.println("+==========PREPARING TEST DATA==========+");
-		readJSON(Neural_Net_File_Path + "/test/UpliftingNews.txt");
-		csvReader(Neural_Net_File_Path + "/test/data.csv");
-		wordToVec(Neural_Net_File_Path + "/test/words.txt");
+//		readJSON(Neural_Net_File_Path + "/test/UpliftingNews.txt");
+//		csvReader(Neural_Net_File_Path + "/test/data.csv");
+//		wordToVec(Neural_Net_File_Path + "/test/words.txt");
 		sentenceToVec(Neural_Net_File_Path + "/test/word_vectors.txt");
 		csvWriter(Neural_Net_File_Path + "/test/results.csv");
 		System.out.println("+==========TEST/results.csv prepared==========+");
@@ -383,6 +388,7 @@ public class Vectorize {
 					}
 					words.add(word);
 					sb.append(word + " ");
+
 					// if word is positive increase its weight
 					if (positive.contains(word)) {
 						keywordFactor += .05;
@@ -390,6 +396,20 @@ public class Vectorize {
 					// if word is negative decrease its weight
 					if (negative.contains(word)) {
 						keywordFactor -= .05;
+					}
+					else {
+						ArrayList<String> synonyms = searchSynonym(word); // calls thesuarus api and returns array of
+																		// synonymns
+						for (String s : synonyms) {
+							if (positive.contains(s)) {
+								keywordFactor += .05;
+								break;
+							}
+							if (negative.contains(s)) {
+								keywordFactor -= .05;
+								break;
+							}
+						}
 					}
 				}
 				// if words size is 0, tweet is made up of words that have frequency < 5 each
@@ -431,7 +451,6 @@ public class Vectorize {
 
 					INDArray wordVectors = word2Vec.getWordVectorsMean(words);
 					words.clear();
-					
 
 					String result = wordVectors.toString() + "," + keywordFactor + "," + nlpFactor + ","
 							+ sentimentLabel;
@@ -449,6 +468,9 @@ public class Vectorize {
 			sc.close();
 			writer.close();
 		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -537,4 +559,61 @@ public class Vectorize {
 		}
 	}
 
+	private ArrayList<String> searchSynonym(String wordToSearch) throws Exception {
+
+		String url = "https://api.datamuse.com/words?rel_syn=" + wordToSearch;
+
+		URL obj = new URL(url);
+		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+
+		con.setRequestMethod("GET");
+		con.setRequestProperty("User-Agent", "Mozilla/5.0");
+
+		int responseCode = con.getResponseCode();
+
+		// ordering the response
+		StringBuilder response;
+		try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
+			String inputLine;
+			response = new StringBuilder();
+
+			while ((inputLine = in.readLine()) != null) {
+				response.append(inputLine);
+			}
+		}
+
+		ObjectMapper mapper = new ObjectMapper();
+
+		try {
+			// converting JSON array to ArrayList of words
+			ArrayList<Word> words = mapper.readValue(response.toString(),
+					mapper.getTypeFactory().constructCollectionType(ArrayList.class, Word.class));
+
+			ArrayList<String> results = new ArrayList<String>();
+			if (words.size() > 0) {
+				for (Word word : words) {
+					results.add(word.getWord());
+				}
+			}
+
+			return results;
+		} catch (IOException e) {
+			e.getMessage();
+		}
+		return null;
+	}
+
+	// word and score attributes are from DataMuse API
+	static class Word {
+		private String word;
+		private int score;
+
+		public String getWord() {
+			return this.word;
+		}
+
+		public int getScore() {
+			return this.score;
+		}
+	}
 }
