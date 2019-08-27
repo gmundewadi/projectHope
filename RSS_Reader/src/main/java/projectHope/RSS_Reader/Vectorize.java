@@ -98,8 +98,7 @@ public class Vectorize {
 
 	private static Logger log = LoggerFactory.getLogger(Vectorize.class);
 	private static String Neural_Net_File_Path = "../Neural_Network/src/main/resources/datasets";
-	private static int negativeDataSize = 500;
-	private static int positiveDataSize = 500;
+	
 	private static Set<String> stopwords;
 	private static Set<String> positive;
 	private static Set<String> negative;
@@ -114,7 +113,8 @@ public class Vectorize {
 		loadPositiveWords();
 		loadNegativeWords();
 		//clearFiles();
-		start.prepareTestData();
+		//start.readJSON(Neural_Net_File_Path + "/test/UpliftingNews.txt");
+		//start.prepareTestData();
 		start.prepareTrainData();
 
 	}
@@ -131,9 +131,8 @@ public class Vectorize {
 
 	public void prepareTestData() {
 		System.out.println("+==========PREPARING TEST DATA==========+");
-//		readJSON(Neural_Net_File_Path + "/test/UpliftingNews.txt");
-//		csvReader(Neural_Net_File_Path + "/test/data.csv");
-//		wordToVec(Neural_Net_File_Path + "/test/words.txt");
+		csvReader(Neural_Net_File_Path + "/test/data.csv");
+		wordToVec(Neural_Net_File_Path + "/test/words.txt");
 		sentenceToVec(Neural_Net_File_Path + "/test/word_vectors.txt");
 		csvWriter(Neural_Net_File_Path + "/test/results.csv");
 		System.out.println("+==========TEST/results.csv prepared==========+");
@@ -163,10 +162,12 @@ public class Vectorize {
 				int endLabelIndex = label.indexOf("\"]},");
 				label = label.substring(11, endLabelIndex);
 				int sentiment = Integer.parseInt(label);
+
 				if (sentiment == 0) {
 					continue;
 				} else if (sentiment > 0) {
 					sentiment = 1;
+
 				} else if (sentiment < 0) {
 					sentiment = 0;
 				}
@@ -244,6 +245,8 @@ public class Vectorize {
 
 	public void csvWriter(String csv_file_path) {
 		System.out.println("Writing Neural Network friendly data to " + csv_file_path + " ... ");
+		int negativeDataSize = 500;
+		int positiveDataSize = 500;
 		String sentenceFileToRead = "";
 		String csvFileToRead = "";
 		if (csv_file_path.contains("train")) {
@@ -252,6 +255,8 @@ public class Vectorize {
 		} else {
 			sentenceFileToRead = Neural_Net_File_Path + "/test/sentence_vectors.txt";
 			csvFileToRead = Neural_Net_File_Path + "/test/data.csv";
+			negativeDataSize = 50;
+			positiveDataSize = 50;
 		}
 		try {
 			CSVWriter writer = new CSVWriter(new FileWriter(csv_file_path));
@@ -391,22 +396,21 @@ public class Vectorize {
 
 					// if word is positive increase its weight
 					if (positive.contains(word)) {
-						keywordFactor += .05;
+						keywordFactor += .025;
 					}
 					// if word is negative decrease its weight
 					if (negative.contains(word)) {
-						keywordFactor -= .05;
-					}
-					else {
+						keywordFactor -= .025;
+					} else {
 						ArrayList<String> synonyms = searchSynonym(word); // calls thesuarus api and returns array of
-																		// synonymns
+																			// synonymns
 						for (String s : synonyms) {
 							if (positive.contains(s)) {
-								keywordFactor += .05;
+								keywordFactor += .025;
 								break;
 							}
 							if (negative.contains(s)) {
-								keywordFactor -= .05;
+								keywordFactor -= .025;
 								break;
 							}
 						}
@@ -424,17 +428,17 @@ public class Vectorize {
 					SentimentResult sentimentResult = sentimentAnalyzer.getSentimentResult(s);
 					sb.setLength(0);
 					double sentimentNLP = sentimentResult.getSentimentScore();
-					double positive = sentimentResult.getSentimentClass().getPositive() / 100;
-					double negative = sentimentResult.getSentimentClass().getNegative() / 100;
-
-					double veryPositive = sentimentResult.getSentimentClass().getVeryPositive() / 100;
-					double veryNegative = sentimentResult.getSentimentClass().getVeryNegative() / 100;
-
-					nlpFactor += positive;
-					nlpFactor += (veryPositive * 1.25);
-
-					nlpFactor -= negative;
-					nlpFactor -= (veryNegative * 1.25);
+//					double positive = sentimentResult.getSentimentClass().getPositive() / 100;
+//					double negative = sentimentResult.getSentimentClass().getNegative() / 100;
+//
+//					double veryPositive = sentimentResult.getSentimentClass().getVeryPositive() / 100;
+//					double veryNegative = sentimentResult.getSentimentClass().getVeryNegative() / 100;
+//
+//					nlpFactor += positive;
+//					nlpFactor += (veryPositive * 1.25);
+//
+//					nlpFactor -= negative;
+//					nlpFactor -= (veryNegative * 1.25);
 
 					if (sentimentNLP == 0.0) {
 						nlpFactor -= .1;
@@ -520,23 +524,7 @@ public class Vectorize {
 		}
 	}
 
-	public List<Integer> getSentiments(String csv_file_path) {
-		try {
-			System.out.println("Getting sentiment labels from " + csv_file_path + " ...");
-			Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(csv_file_path), "utf-8"));
-			CSVReader csvReader = new CSVReader(reader);
-			String[] nextRecord;
-			List<Integer> sentiments = new ArrayList<>();
-			while ((nextRecord = csvReader.readNext()) != null) {
-				sentiments.add(Integer.parseInt(nextRecord[0]));
-			}
-			return sentiments;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null; // return statement for compilation only
-	}
-
+	
 	public static void clearFiles() {
 		try {
 			System.out.println("Clearing /datasets/train words.txt, word_vectors.txt, and sentence_vectors.txt ... ");

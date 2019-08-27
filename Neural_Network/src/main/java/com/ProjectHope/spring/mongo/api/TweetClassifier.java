@@ -73,11 +73,11 @@ public class TweetClassifier {
 		int numClasses = 2; // 2 classes (types of tweet) in the results.csv data set. Classes have integer
 							// values 0 or 1
 
-		int batchSizeTraining = 400; // Tweets training data set: 100000+ examples total.
+		int batchSizeTraining = 690; // Tweets training data set: 100000+ examples total.
 		DataSet trainingData = readCSVDataset(twitterDataTrainFile, batchSizeTraining, labelIndex, numClasses);
 
 		// this is the data we want to classify
-		int batchSizeTest = 349;
+		int batchSizeTest = 126;
 		DataSet testData = readCSVDataset(twitterDataTestFile, batchSizeTest, labelIndex, numClasses);
 
 		// make the data model for records prior to normalization, because it
@@ -146,11 +146,11 @@ public class TweetClassifier {
 			// only if prediction is innacurate, display information to the user
 			// as well as the margin of error
 			float[] predictions = getFloatArrayFromSlice(output.slice(tweetIndex));
-			if (!actual.equals(t.getTweetClass())) {
+			//if (!actual.equals(t.getTweetClass())) {
 				double marginOfError = getMarginOfError(predictions, actual);
 				System.out.println("predicted: " + t.getTweetClass() + " | actual: " + actual + " | MOE : "
 						+ df2.format(marginOfError * 100) + "%");
-			}
+			//}
 
 			tweetIndex++;
 
