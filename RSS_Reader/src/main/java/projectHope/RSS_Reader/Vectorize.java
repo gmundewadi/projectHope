@@ -109,13 +109,13 @@ public class Vectorize {
 			"TRAINED_DATA_PATH");
 
 	public static void main(String args[]) {
-		Vectorize v = new Vectorize();
+		Vectorize start = new Vectorize();
 		loadStopWords();
 		loadPositiveWords();
 		loadNegativeWords();
 		//clearFiles();
-		v.prepareTestData();
-		v.prepareTrainData();
+		start.prepareTestData();
+		start.prepareTrainData();
 
 	}
 
