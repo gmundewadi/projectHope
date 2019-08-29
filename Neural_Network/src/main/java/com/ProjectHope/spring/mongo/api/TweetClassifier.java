@@ -26,8 +26,10 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -66,14 +68,14 @@ public class TweetClassifier {
 
 		// Second: the RecordReaderDataSetIterator handles conversion to DataSet
 		// objects, ready for use in neural network
-		int labelIndex = 102; // 103 values in each row of the results.csv CSV: 101 input features followed by
+		int labelIndex = 102; // 103 values in each row of the results.csv CSV: 102 input features followed by
 								// an
 								// integer label (class) index. Labels are the 102th value (index 101) in each
 								// row
 		int numClasses = 2; // 2 classes (types of tweet) in the results.csv data set. Classes have integer
 							// values 0 or 1
 
-		int batchSizeTraining = 690; // Tweets training data set: 100000+ examples total.
+		int batchSizeTraining = 1000; // Tweets training data set: 100000+ examples total.
 		DataSet trainingData = readCSVDataset(twitterDataTrainFile, batchSizeTraining, labelIndex, numClasses);
 
 		// this is the data we want to classify
@@ -98,7 +100,7 @@ public class TweetClassifier {
 		final int numInputs = 102;
 		int numOutputs = 2;
 		int epochs = 1000;
-		long seed = 6;
+		long seed = 123;
 		int numHiddenNodes = 2;
 
 		log.info("Build model....");
@@ -107,8 +109,10 @@ public class TweetClassifier {
 				.layer(0,
 						new DenseLayer.Builder().nIn(numInputs).nOut(numHiddenNodes).weightInit(WeightInit.XAVIER)
 								.activation(Activation.RELU).build())
-				.layer(1, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD).weightInit(WeightInit.XAVIER)
-						.activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER).nIn(2).nOut(numOutputs).build())
+				.layer(1,
+						new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD).weightInit(WeightInit.XAVIER)
+								.activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER).nIn(numHiddenNodes)
+								.nOut(numOutputs).build())
 				.build();
 
 		// run the model
@@ -127,8 +131,8 @@ public class TweetClassifier {
 		eval.eval(testData.getLabels(), output);
 		log.info(eval.stats());
 
-		classify(output, tweets);
-		logTweets(output, tweets);
+		//classify(output, tweets);
+		//logTweets(output, tweets);
 
 	}
 
@@ -146,11 +150,11 @@ public class TweetClassifier {
 			// only if prediction is innacurate, display information to the user
 			// as well as the margin of error
 			float[] predictions = getFloatArrayFromSlice(output.slice(tweetIndex));
-			//if (!actual.equals(t.getTweetClass())) {
-				double marginOfError = getMarginOfError(predictions, actual);
-				System.out.println("predicted: " + t.getTweetClass() + " | actual: " + actual + " | MOE : "
-						+ df2.format(marginOfError * 100) + "%");
-			//}
+			// if (!actual.equals(t.getTweetClass())) {
+			double marginOfError = getMarginOfError(predictions, actual);
+			System.out.println("predicted: " + t.getTweetClass() + " | actual: " + actual + " | prediction : "
+					+ printArray(predictions) + "| " + t.getKeywordFactor());
+			// }
 
 			tweetIndex++;
 
@@ -175,6 +179,7 @@ public class TweetClassifier {
 			INDArray sentimentSlice = sentiments.slice(i);
 
 			float[] tweetArray = getFloatArrayFromSlice(tweetSlice);
+
 			int size = tweetArray.length;
 			int sentiment = sentimentSlice.getInt(1);
 
@@ -191,22 +196,23 @@ public class TweetClassifier {
 			float[] predictions = getFloatArrayFromSlice(output.slice(i));
 			// multiplication factor from stanford NLP and keyword search
 			// used to refine neural network results
-			float nlpFactor = 1 + irs.getNlpFactor();
-			float keywordFactor = 1 + irs.getKeywordFactor();
-			if (nlpFactor > 0) {
+			float nlpFactor = 10 + irs.getNlpFactor();
+			float keywordFactor = 5 + irs.getKeywordFactor();
+
+			if (irs.getNlpFactor() > 0) {
 				predictions[1] = (float) (predictions[1] * (nlpFactor));
 				predictions[0] = (float) (predictions[0] / (nlpFactor));
 
-			} else {
+			} else if(irs.getNlpFactor() < 0) {
 				predictions[1] = (float) (predictions[1] / (nlpFactor));
 				predictions[0] = (float) (predictions[0] * (nlpFactor));
 			}
-
-			if (keywordFactor > 0) {
+			
+			if (irs.getKeywordFactor() > 0) {
 				predictions[1] = (float) (predictions[1] * (keywordFactor));
 				predictions[0] = (float) (predictions[0] / (keywordFactor));
 
-			} else {
+			} else if(irs.getKeywordFactor() < 0) {
 				predictions[1] = (float) (predictions[1] / (keywordFactor));
 				predictions[0] = (float) (predictions[0] * (keywordFactor));
 			}
@@ -242,6 +248,14 @@ public class TweetClassifier {
 		return result;
 	}
 
+	public static double getMarginOfError(float[] arr, String actual) {
+		int index = 0;
+		if (actual.equals("positive")) {
+			index = 1;
+		}
+		return Math.abs(.5 - arr[index]);
+	}
+
 	// for future nlp use?
 	// Possible integreation with the stanford core NLP lib?
 	public Map<Integer, String> getTweets(String csv_file_path) {
@@ -261,14 +275,6 @@ public class TweetClassifier {
 			e.printStackTrace();
 		}
 		return null; // return statement for compilation only
-	}
-
-	public static double getMarginOfError(float[] arr, String actual) {
-		int index = 0;
-		if (actual.equals("positive")) {
-			index = 1;
-		}
-		return Math.abs(.5 - arr[index]);
 	}
 
 }

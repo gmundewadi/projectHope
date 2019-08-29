@@ -98,7 +98,7 @@ public class Vectorize {
 
 	private static Logger log = LoggerFactory.getLogger(Vectorize.class);
 	private static String Neural_Net_File_Path = "../Neural_Network/src/main/resources/datasets";
-	
+
 	private static Set<String> stopwords;
 	private static Set<String> positive;
 	private static Set<String> negative;
@@ -112,17 +112,17 @@ public class Vectorize {
 		loadStopWords();
 		loadPositiveWords();
 		loadNegativeWords();
-		//clearFiles();
-		//start.readJSON(Neural_Net_File_Path + "/test/UpliftingNews.txt");
-		//start.prepareTestData();
+		clearFiles();
+		start.readJSON(Neural_Net_File_Path + "/test/UpliftingNews.txt");
+		start.prepareTestData();
 		start.prepareTrainData();
 
 	}
 
 	public void prepareTrainData() {
 		System.out.println("+==========PREPARING TRAIN DATA==========+");
-//		csvReader(Neural_Net_File_Path + "/train/data.csv");
-//		wordToVec(Neural_Net_File_Path + "/train/words.txt");
+		csvReader(Neural_Net_File_Path + "/train/data.csv");
+		wordToVec(Neural_Net_File_Path + "/train/words.txt");
 		sentenceToVec(Neural_Net_File_Path + "/train/word_vectors.txt");
 		csvWriter(Neural_Net_File_Path + "/train/results.csv");
 		System.out.println("+==========TRAIN/results.csv prepared==========+");
@@ -279,7 +279,8 @@ public class Vectorize {
 					if (sentiment == 2) {
 						continue;
 					}
-					double factor = Double.parseDouble(partsOfTweet[length - 2]);
+					double nlpFactor = Double.parseDouble(partsOfTweet[length - 2]);
+					double keywordFactor = Double.parseDouble(partsOfTweet[length - 3]);
 					// this if statement ensures that the training data remains
 					// evenly split between negative and positive news
 					if (negatives >= negativeDataSize && positives >= positiveDataSize) {
@@ -308,6 +309,13 @@ public class Vectorize {
 			e.printStackTrace();
 
 		}
+	}
+	
+	public void printArray(String[] arr) {
+		for(String a: arr) {
+			System.out.print(a + " ");
+		}
+		System.out.println("n");
 	}
 
 	public void csvReader(String csv_file_path) {
@@ -399,7 +407,7 @@ public class Vectorize {
 						keywordFactor += .025;
 					}
 					// if word is negative decrease its weight
-					if (negative.contains(word)) {
+					else if (negative.contains(word)) {
 						keywordFactor -= .025;
 					} else {
 						ArrayList<String> synonyms = searchSynonym(word); // calls thesuarus api and returns array of
@@ -423,31 +431,26 @@ public class Vectorize {
 					 * "Very negative" = 0 "Negative" = 1 "Neutral" = 2 "Positive" = 3
 					 * "Very positive" = 4
 					 */
+					
 					String s = sb.toString().trim();
 
 					SentimentResult sentimentResult = sentimentAnalyzer.getSentimentResult(s);
 					sb.setLength(0);
 					double sentimentNLP = sentimentResult.getSentimentScore();
-//					double positive = sentimentResult.getSentimentClass().getPositive() / 100;
-//					double negative = sentimentResult.getSentimentClass().getNegative() / 100;
-//
-//					double veryPositive = sentimentResult.getSentimentClass().getVeryPositive() / 100;
-//					double veryNegative = sentimentResult.getSentimentClass().getVeryNegative() / 100;
-//
-//					nlpFactor += positive;
-//					nlpFactor += (veryPositive * 1.25);
-//
-//					nlpFactor -= negative;
-//					nlpFactor -= (veryNegative * 1.25);
 
 					if (sentimentNLP == 0.0) {
-						nlpFactor -= .1;
+						nlpFactor -= 1;
 					} else if (sentimentNLP == 1.0) {
-						nlpFactor -= .05;
+						nlpFactor -= .5;
 					} else if (sentimentNLP == 3.0) {
-						nlpFactor += .1;
+						nlpFactor += 1;
 					} else if (sentimentNLP == 4.0) {
-						nlpFactor += .05;
+						nlpFactor += .5;
+					}
+					
+					
+					if(nlpFactor == 0) {
+						nlpFactor = keywordFactor;
 					}
 
 					// how to get neutral sentiment analysis
@@ -455,7 +458,6 @@ public class Vectorize {
 
 					INDArray wordVectors = word2Vec.getWordVectorsMean(words);
 					words.clear();
-
 					String result = wordVectors.toString() + "," + keywordFactor + "," + nlpFactor + ","
 							+ sentimentLabel;
 					writer.write(result + "\n");
@@ -524,7 +526,6 @@ public class Vectorize {
 		}
 	}
 
-	
 	public static void clearFiles() {
 		try {
 			System.out.println("Clearing /datasets/train words.txt, word_vectors.txt, and sentence_vectors.txt ... ");
