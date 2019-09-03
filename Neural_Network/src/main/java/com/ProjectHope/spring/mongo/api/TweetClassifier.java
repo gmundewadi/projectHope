@@ -100,7 +100,6 @@ public class TweetClassifier {
 		int numOutputs = 2;
 		int epochs = 1000;
 		long seed = 123456;
-		int numHiddenNodes = 2;
 
 		log.info("Build model....");
 		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.TANH)
@@ -108,7 +107,7 @@ public class TweetClassifier {
 				.layer(new DenseLayer.Builder().nIn(numInputs).nOut(3).build())
 				.layer(new DenseLayer.Builder().nIn(3).nOut(3).build())
 				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-						.activation(Activation.SOFTMAX).nIn(3).nOut(2).build())
+						.activation(Activation.SOFTMAX).nIn(3).nOut(numOutputs).build())
 				.build();
 		// run the model
 		MultiLayerNetwork model = new MultiLayerNetwork(conf);
@@ -123,7 +122,7 @@ public class TweetClassifier {
 		Evaluation eval = new Evaluation(2);
 		INDArray output = model.output(testData.getFeatures());
 		eval.eval(testData.getLabels(), output);
-		// log.info(eval.stats());
+		log.info(eval.stats());
 
 		classify(output, tweets);
 		logTweets(output, tweets);
@@ -131,6 +130,7 @@ public class TweetClassifier {
 	}
 
 	public static void logTweets(INDArray output, Map<Integer, Tweet> tweets) {
+		System.out.println("\n\n\n\n---------------incorrect neural network predictions-----------------\n\n\n");
 
 		int tweetIndex = 0;
 		double numWrong = 0;
@@ -152,7 +152,7 @@ public class TweetClassifier {
 			}
 			tweetIndex++;
 		}
-		System.out.println("ACCURACY: " + df2.format(1 - (numWrong / tweets.size())));
+		System.out.println("\n\nACCURACY: " + df2.format(1 - (numWrong / tweets.size())));
 	}
 
 	private static DataSet readCSVDataset(String csvFileClasspath, int batchSize, int labelIndex, int numClasses)
@@ -192,6 +192,8 @@ public class TweetClassifier {
 			// used to refine neural network results
 
 			float nlpFactor = irs.getNlpFactor();
+			float keywordFactor = irs.getKeywordFactor();
+
 			if (nlpFactor != 0) {
 				if (nlpFactor < 0) {
 					predictions[0] = (float) predictions[0] * 10;
@@ -200,7 +202,6 @@ public class TweetClassifier {
 
 				}
 			} else {
-				float keywordFactor = irs.getKeywordFactor();
 				if (keywordFactor < 0) {
 					predictions[0] = (float) predictions[0] * 5;
 				} else {
