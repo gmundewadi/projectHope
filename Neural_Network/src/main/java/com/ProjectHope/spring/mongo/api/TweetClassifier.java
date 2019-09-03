@@ -75,11 +75,11 @@ public class TweetClassifier {
 		int numClasses = 2; // 2 classes (types of tweet) in the results.csv data set. Classes have integer
 							// values 0 or 1
 
-		int batchSizeTraining = 1000; // Tweets training data set: 100000+ examples total.
+		int batchSizeTraining = 676; // Tweets training data set: 100000+ examples total.
 		DataSet trainingData = readCSVDataset(twitterDataTrainFile, batchSizeTraining, labelIndex, numClasses);
 
 		// this is the data we want to classify
-		int batchSizeTest = 497;
+		int batchSizeTest = 100;
 		DataSet testData = readCSVDataset(twitterDataTestFile, batchSizeTest, labelIndex, numClasses);
 
 		// make the data model for records prior to normalization, because it
@@ -103,18 +103,13 @@ public class TweetClassifier {
 		int numHiddenNodes = 2;
 
 		log.info("Build model....");
-		 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-		            .seed(seed)
-		            .activation(Activation.TANH)
-		            .weightInit(WeightInit.XAVIER)
-		            .updater(new Sgd(0.1))
-		            .l2(1e-4)
-		            .list()
-		            .layer(new DenseLayer.Builder().nIn(numInputs).nOut(3).build())
-		            .layer(new DenseLayer.Builder().nIn(3).nOut(3).build())
-		            .layer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-		                .activation(Activation.SOFTMAX).nIn(3).nOut(2).build())
-		            .build();
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).activation(Activation.TANH)
+				.weightInit(WeightInit.XAVIER).updater(new Sgd(0.1)).l2(1e-4).list()
+				.layer(new DenseLayer.Builder().nIn(numInputs).nOut(3).build())
+				.layer(new DenseLayer.Builder().nIn(3).nOut(3).build())
+				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+						.activation(Activation.SOFTMAX).nIn(3).nOut(2).build())
+				.build();
 		// run the model
 		MultiLayerNetwork model = new MultiLayerNetwork(conf);
 		model.init();
@@ -128,7 +123,7 @@ public class TweetClassifier {
 		Evaluation eval = new Evaluation(2);
 		INDArray output = model.output(testData.getFeatures());
 		eval.eval(testData.getLabels(), output);
-		log.info(eval.stats());
+		// log.info(eval.stats());
 
 		classify(output, tweets);
 		logTweets(output, tweets);
@@ -138,6 +133,7 @@ public class TweetClassifier {
 	public static void logTweets(INDArray output, Map<Integer, Tweet> tweets) {
 
 		int tweetIndex = 0;
+		double numWrong = 0;
 		for (int key : tweets.keySet()) {
 			Tweet t = tweets.get(key);
 			String actual = "";
@@ -147,15 +143,16 @@ public class TweetClassifier {
 				actual = "negative";
 			}
 			float[] predictions = getFloatArrayFromSlice(output.slice(tweetIndex));
-			// if (!actual.equals(t.getTweetClass())) {
-			double marginOfError = getMarginOfError(predictions, actual);
-			System.out.println("predicted: " + t.getTweetClass() + " | actual: " + actual + " | prediction : "
-					+ printArray(predictions) + "| " + t.getKeywordFactor());
-			// }
 
+			if (!actual.equals(t.getTweetClass())) {
+				double marginOfError = getMarginOfError(predictions, actual);
+				System.out.println("predicted: " + t.getTweetClass() + " | actual: " + actual + " | prediction : "
+						+ printArray(predictions) + "| " + t.getKeywordFactor() + "| " + t.getNlpFactor());
+				numWrong++;
+			}
 			tweetIndex++;
-
 		}
+		System.out.println("ACCURACY: " + df2.format(1 - (numWrong / tweets.size())));
 	}
 
 	private static DataSet readCSVDataset(String csvFileClasspath, int batchSize, int labelIndex, int numClasses)
@@ -193,27 +190,25 @@ public class TweetClassifier {
 			float[] predictions = getFloatArrayFromSlice(output.slice(i));
 			// multiplication factor from stanford NLP and keyword search
 			// used to refine neural network results
-			float nlpFactor = 10 + irs.getNlpFactor();
-			float keywordFactor = 5 + irs.getKeywordFactor();
 
-			if (irs.getNlpFactor() > 0) {
-				predictions[1] = (float) (predictions[1] * (nlpFactor));
-				predictions[0] = (float) (predictions[0] / (nlpFactor));
+			float nlpFactor = irs.getNlpFactor();
+			if (nlpFactor != 0) {
+				if (nlpFactor < 0) {
+					predictions[0] = (float) predictions[0] * 10;
+				} else {
+					predictions[1] = (float) predictions[1] * 10;
 
-			} else if(irs.getNlpFactor() < 0) {
-				predictions[1] = (float) (predictions[1] / (nlpFactor));
-				predictions[0] = (float) (predictions[0] * (nlpFactor));
+				}
+			} else {
+				float keywordFactor = irs.getKeywordFactor();
+				if (keywordFactor < 0) {
+					predictions[0] = (float) predictions[0] * 5;
+				} else {
+					predictions[1] = (float) predictions[1] * 5;
+
+				}
+
 			}
-			
-			if (irs.getKeywordFactor() > 0) {
-				predictions[1] = (float) (predictions[1] * (keywordFactor));
-				predictions[0] = (float) (predictions[0] / (keywordFactor));
-
-			} else if(irs.getKeywordFactor() < 0) {
-				predictions[1] = (float) (predictions[1] / (keywordFactor));
-				predictions[0] = (float) (predictions[0] * (keywordFactor));
-			}
-
 			irs.setTweetClass(classifiers.get(maxIndex(predictions)));
 		}
 	}

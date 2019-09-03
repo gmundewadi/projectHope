@@ -112,17 +112,17 @@ public class Vectorize {
 		loadStopWords();
 		loadPositiveWords();
 		loadNegativeWords();
-		clearFiles();
+		//clearFiles();
 		//start.readJSON(Neural_Net_File_Path + "/test/UpliftingNews.txt");
 		start.prepareTestData();
-		//start.prepareTrainData();
+		start.prepareTrainData();
 
 	}
 
 	public void prepareTrainData() {
 		System.out.println("+==========PREPARING TRAIN DATA==========+");
-		csvReader(Neural_Net_File_Path + "/train/data.csv");
-		wordToVec(Neural_Net_File_Path + "/train/words.txt");
+//		csvReader(Neural_Net_File_Path + "/train/data.csv");
+//		wordToVec(Neural_Net_File_Path + "/train/words.txt");
 		sentenceToVec(Neural_Net_File_Path + "/train/word_vectors.txt");
 		csvWriter(Neural_Net_File_Path + "/train/results.csv");
 		System.out.println("+==========TRAIN/results.csv prepared==========+");
@@ -131,8 +131,8 @@ public class Vectorize {
 
 	public void prepareTestData() {
 		System.out.println("+==========PREPARING TEST DATA==========+");
-		csvReader(Neural_Net_File_Path + "/test/data.csv");
-		wordToVec(Neural_Net_File_Path + "/test/words.txt");
+//		csvReader(Neural_Net_File_Path + "/test/data.csv");
+//		wordToVec(Neural_Net_File_Path + "/test/words.txt");
 		sentenceToVec(Neural_Net_File_Path + "/test/word_vectors.txt");
 		csvWriter(Neural_Net_File_Path + "/test/results.csv");
 		System.out.println("+==========TEST/results.csv prepared==========+");
@@ -345,7 +345,7 @@ public class Vectorize {
 
 			// edit size variable to avoid index out of bounds
 			int size = lines.size();
-			if (size > 2000) {
+			if (size > 1000) {
 				size = 1000;
 			}
 			for (int i = 0; i < size; i++) {
@@ -439,19 +439,18 @@ public class Vectorize {
 					double sentimentNLP = sentimentResult.getSentimentScore();
 
 					if (sentimentNLP == 0.0) {
-						nlpFactor -= 1;
+						nlpFactor -= .025;
 					} else if (sentimentNLP == 1.0) {
-						nlpFactor -= .5;
+						nlpFactor -= .025;
 					} else if (sentimentNLP == 3.0) {
-						nlpFactor += 1;
+						nlpFactor += .025;
 					} else if (sentimentNLP == 4.0) {
-						nlpFactor += .5;
+						nlpFactor += .025;
 					}
 					
-					
-					if(nlpFactor == 0) {
-						nlpFactor = keywordFactor;
-					}
+//					if(nlpFactor == 0) {
+//						nlpFactor = keywordFactor;
+//					}
 
 					// how to get neutral sentiment analysis
 					// sentimentResult.getSentimentClass().getNeutral();
@@ -508,7 +507,7 @@ public class Vectorize {
 			t.setTokenPreProcessor(new CommonPreprocessor());
 
 			log.info("Building model....");
-			Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1).iterations(1).layerSize(100).seed(42)
+			Word2Vec vec = new Word2Vec.Builder().minWordFrequency(5).iterations(1).layerSize(100).seed(42)
 					.windowSize(5).iterate(iter).tokenizerFactory(t).build();
 
 			log.info("Fitting Word2Vec model....");
