@@ -79,7 +79,7 @@ public class TweetClassifier {
 		DataSet trainingData = readCSVDataset(twitterDataTrainFile, batchSizeTraining, labelIndex, numClasses);
 
 		// this is the data we want to classify
-		int batchSizeTest = 126;
+		int batchSizeTest = 497;
 		DataSet testData = readCSVDataset(twitterDataTestFile, batchSizeTest, labelIndex, numClasses);
 
 		// make the data model for records prior to normalization, because it
@@ -88,7 +88,6 @@ public class TweetClassifier {
 
 		// We need to normalize our data. We'll use NormalizeStandardize (which gives us
 		// mean 0, unit variance):
-		trainingData.shuffle(123);
 		DataNormalization normalizer = new NormalizerStandardize();
 		normalizer.fit(trainingData); // Collect the statistics (mean/stdev) from the training data. This does not
 										// modify the input data
@@ -100,21 +99,22 @@ public class TweetClassifier {
 		final int numInputs = 102;
 		int numOutputs = 2;
 		int epochs = 1000;
-		long seed = 123;
+		long seed = 123456;
 		int numHiddenNodes = 2;
 
 		log.info("Build model....");
-		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed)
-				.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.NESTEROVS).list()
-				.layer(0,
-						new DenseLayer.Builder().nIn(numInputs).nOut(numHiddenNodes).weightInit(WeightInit.XAVIER)
-								.activation(Activation.RELU).build())
-				.layer(1,
-						new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD).weightInit(WeightInit.XAVIER)
-								.activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER).nIn(numHiddenNodes)
-								.nOut(numOutputs).build())
-				.build();
-
+		 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+		            .seed(seed)
+		            .activation(Activation.TANH)
+		            .weightInit(WeightInit.XAVIER)
+		            .updater(new Sgd(0.1))
+		            .l2(1e-4)
+		            .list()
+		            .layer(new DenseLayer.Builder().nIn(numInputs).nOut(3).build())
+		            .layer(new DenseLayer.Builder().nIn(3).nOut(3).build())
+		            .layer(new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+		                .activation(Activation.SOFTMAX).nIn(3).nOut(2).build())
+		            .build();
 		// run the model
 		MultiLayerNetwork model = new MultiLayerNetwork(conf);
 		model.init();
@@ -127,12 +127,11 @@ public class TweetClassifier {
 		// evaluate the model on the test set
 		Evaluation eval = new Evaluation(2);
 		INDArray output = model.output(testData.getFeatures());
-
 		eval.eval(testData.getLabels(), output);
 		log.info(eval.stats());
 
-		//classify(output, tweets);
-		//logTweets(output, tweets);
+		classify(output, tweets);
+		logTweets(output, tweets);
 
 	}
 
@@ -147,8 +146,6 @@ public class TweetClassifier {
 			} else {
 				actual = "negative";
 			}
-			// only if prediction is innacurate, display information to the user
-			// as well as the margin of error
 			float[] predictions = getFloatArrayFromSlice(output.slice(tweetIndex));
 			// if (!actual.equals(t.getTweetClass())) {
 			double marginOfError = getMarginOfError(predictions, actual);

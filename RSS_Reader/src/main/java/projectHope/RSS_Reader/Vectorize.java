@@ -113,9 +113,9 @@ public class Vectorize {
 		loadPositiveWords();
 		loadNegativeWords();
 		clearFiles();
-		start.readJSON(Neural_Net_File_Path + "/test/UpliftingNews.txt");
+		//start.readJSON(Neural_Net_File_Path + "/test/UpliftingNews.txt");
 		start.prepareTestData();
-		start.prepareTrainData();
+		//start.prepareTrainData();
 
 	}
 
@@ -508,7 +508,7 @@ public class Vectorize {
 			t.setTokenPreProcessor(new CommonPreprocessor());
 
 			log.info("Building model....");
-			Word2Vec vec = new Word2Vec.Builder().minWordFrequency(5).iterations(1).layerSize(100).seed(42)
+			Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1).iterations(1).layerSize(100).seed(42)
 					.windowSize(5).iterate(iter).tokenizerFactory(t).build();
 
 			log.info("Fitting Word2Vec model....");
