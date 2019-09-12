@@ -13,6 +13,7 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -114,6 +115,7 @@ public class Vectorize {
 		loadNegativeWords();
 		clearFiles();
 		start.readJSON(Neural_Net_File_Path + "/test/UpliftingNews.txt");
+		start.readJSON(Neural_Net_File_Path + "/train/UpliftingNews.txt");
 		start.prepareTestData();
 		start.prepareTrainData();
 
@@ -141,10 +143,17 @@ public class Vectorize {
 	// this method is temporary
 	public void readJSON(String json_file_path) {
 		try {
+			String fileToWrite = "";
+			if (json_file_path.contains("train")) {
+				fileToWrite = Neural_Net_File_Path + "/train/data.csv";
+			} else {
+				fileToWrite = Neural_Net_File_Path + "/test/data.csv";
+			}
+
 			File file = new File(json_file_path);
 			Scanner sc = new Scanner(file);
 			JSONParser parser = new JSONParser();
-			CSVWriter writer = new CSVWriter(new FileWriter(Neural_Net_File_Path + "/test/data.csv"));
+			CSVWriter writer = new CSVWriter(new FileWriter(fileToWrite));
 			List<String[]> results = new ArrayList<String[]>();
 			while (sc.hasNextLine()) {
 				String word = sc.nextLine();
@@ -245,8 +254,8 @@ public class Vectorize {
 
 	public void csvWriter(String csv_file_path) {
 		System.out.println("Writing Neural Network friendly data to " + csv_file_path + " ... ");
-		int negativeDataSize = 500;
-		int positiveDataSize = 500;
+		int negativeDataSize = 100;
+		int positiveDataSize = 100;
 		String sentenceFileToRead = "";
 		String csvFileToRead = "";
 		if (csv_file_path.contains("train")) {
@@ -310,9 +319,9 @@ public class Vectorize {
 
 		}
 	}
-	
+
 	public void printArray(String[] arr) {
-		for(String a: arr) {
+		for (String a : arr) {
 			System.out.print(a + " ");
 		}
 		System.out.println("n");
@@ -404,11 +413,11 @@ public class Vectorize {
 
 					// if word is positive increase its weight
 					if (positive.contains(word)) {
-						keywordFactor += .025;
+						keywordFactor += .00025;
 					}
 					// if word is negative decrease its weight
 					else if (negative.contains(word)) {
-						keywordFactor -= .025;
+						keywordFactor -= .00025;
 					} else {
 						ArrayList<String> synonyms = searchSynonym(word); // calls thesuarus api and returns array of
 																			// synonymns
@@ -431,7 +440,7 @@ public class Vectorize {
 					 * "Very negative" = 0 "Negative" = 1 "Neutral" = 2 "Positive" = 3
 					 * "Very positive" = 4
 					 */
-					
+
 					String s = sb.toString().trim();
 
 					SentimentResult sentimentResult = sentimentAnalyzer.getSentimentResult(s);
@@ -439,15 +448,14 @@ public class Vectorize {
 					double sentimentNLP = sentimentResult.getSentimentScore();
 
 					if (sentimentNLP == 0.0) {
-						nlpFactor -= .025;
+						nlpFactor -= .0005;
 					} else if (sentimentNLP == 1.0) {
-						nlpFactor -= .025;
+						nlpFactor -= .00025;
 					} else if (sentimentNLP == 3.0) {
-						nlpFactor += .025;
+						nlpFactor += .0005;
 					} else if (sentimentNLP == 4.0) {
-						nlpFactor += .025;
+						nlpFactor += .00025;
 					}
-					
 
 					// how to get neutral sentiment analysis
 					// sentimentResult.getSentimentClass().getNeutral();

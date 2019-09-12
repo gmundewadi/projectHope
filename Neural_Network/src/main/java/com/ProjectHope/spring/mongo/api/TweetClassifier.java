@@ -75,11 +75,11 @@ public class TweetClassifier {
 		int numClasses = 2; // 2 classes (types of tweet) in the results.csv data set. Classes have integer
 							// values 0 or 1
 
-		int batchSizeTraining = 676; // Tweets training data set: 100000+ examples total.
+		int batchSizeTraining = 244; // Tweets training data set: 100000+ examples total.
 		DataSet trainingData = readCSVDataset(twitterDataTrainFile, batchSizeTraining, labelIndex, numClasses);
 
 		// this is the data we want to classify
-		int batchSizeTest = 100;
+		int batchSizeTest = 30;
 		DataSet testData = readCSVDataset(twitterDataTestFile, batchSizeTest, labelIndex, numClasses);
 
 		// make the data model for records prior to normalization, because it
@@ -196,16 +196,16 @@ public class TweetClassifier {
 
 			if (nlpFactor != 0) {
 				if (nlpFactor < 0) {
-					predictions[0] = (float) predictions[0] * 10;
+					predictions[0] = (float) (predictions[0] * 10);
 				} else {
-					predictions[1] = (float) predictions[1] * 10;
+					predictions[1] = (float) (predictions[1] * 10);
 
 				}
 			} else {
 				if (keywordFactor < 0) {
-					predictions[0] = (float) predictions[0] * 5;
+					predictions[0] = (float) (predictions[0] * 5);
 				} else {
-					predictions[1] = (float) predictions[1] * 5;
+					predictions[1] = (float) (predictions[1] * 5);
 
 				}
 
